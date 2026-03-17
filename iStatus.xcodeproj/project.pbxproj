@@ -1,0 +1,296 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1B2C3D4E5F6012345678920 /* iStatusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678930 /* iStatusApp.swift */; };
+		A1B2C3D4E5F6012345678922 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678932 /* MenuBarView.swift */; };
+		A1B2C3D4E5F6012345678923 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678933 /* DashboardView.swift */; };
+		A1B2C3D4E5F6012345678924 /* MiniChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678934 /* MiniChartView.swift */; };
+		A1B2C3D4E5F601234567893A /* MemoryStackChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601234567893B /* MemoryStackChartView.swift */; };
+		A1B2C3D4E5F6012345678925 /* RingGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678935 /* RingGaugeView.swift */; };
+		A1B2C3D4E5F6012345678926 /* MetricModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678936 /* MetricModels.swift */; };
+		A1B2C3D4E5F6012345678927 /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678937 /* RingBuffer.swift */; };
+		A1B2C3D4E5F6012345678928 /* MetricsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678938 /* MetricsStore.swift */; };
+		A1B2C3D4E5F6012345678929 /* CPUSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678939 /* CPUSampler.swift */; };
+		A1B2C3D4E5F601234567892A /* MemorySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678940 /* MemorySampler.swift */; };
+		A1B2C3D4E5F601234567892B /* DiskSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678941 /* DiskSampler.swift */; };
+		A1B2C3D4E5F601234567892C /* NetworkSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678942 /* NetworkSampler.swift */; };
+		A1B2C3D4E5F601234567892D /* BatterySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678943 /* BatterySampler.swift */; };
+		A1B2C3D4E5F601234567892E /* GPUSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678944 /* GPUSampler.swift */; };
+		A1B2C3D4E5F601234567892F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678945 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1B2C3D4E5F6012345678914 /* iStatus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = iStatus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F6012345678930 /* iStatusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iStatusApp.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678932 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678933 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678934 /* MiniChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniChartView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F601234567893B /* MemoryStackChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStackChartView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678935 /* RingGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingGaugeView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678936 /* MetricModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricModels.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678937 /* RingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBuffer.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678938 /* MetricsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678939 /* CPUSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUSampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678940 /* MemorySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemorySampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678941 /* DiskSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678942 /* NetworkSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678943 /* BatterySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatterySampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678944 /* GPUSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUSampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678945 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678946 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1B2C3D4E5F6012345678907 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1B2C3D4E5F6012345678902 /* iStatus */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678930 /* iStatusApp.swift */,
+				A1B2C3D4E5F6012345678932 /* MenuBarView.swift */,
+				A1B2C3D4E5F6012345678933 /* DashboardView.swift */,
+				A1B2C3D4E5F6012345678934 /* MiniChartView.swift */,
+				A1B2C3D4E5F601234567893B /* MemoryStackChartView.swift */,
+				A1B2C3D4E5F6012345678935 /* RingGaugeView.swift */,
+				A1B2C3D4E5F6012345678947 /* Metrics */,
+				A1B2C3D4E5F6012345678948 /* Resources */,
+				A1B2C3D4E5F6012345678903 /* Products */,
+			);
+			path = iStatus;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678903 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678914 /* iStatus.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678947 /* Metrics */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678936 /* MetricModels.swift */,
+				A1B2C3D4E5F6012345678937 /* RingBuffer.swift */,
+				A1B2C3D4E5F6012345678938 /* MetricsStore.swift */,
+				A1B2C3D4E5F6012345678949 /* Samplers */,
+			);
+			path = Metrics;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678948 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678945 /* Assets.xcassets */,
+				A1B2C3D4E5F6012345678946 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678949 /* Samplers */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678939 /* CPUSampler.swift */,
+				A1B2C3D4E5F6012345678940 /* MemorySampler.swift */,
+				A1B2C3D4E5F6012345678941 /* DiskSampler.swift */,
+				A1B2C3D4E5F6012345678942 /* NetworkSampler.swift */,
+				A1B2C3D4E5F6012345678943 /* BatterySampler.swift */,
+				A1B2C3D4E5F6012345678944 /* GPUSampler.swift */,
+			);
+			path = Samplers;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1B2C3D4E5F6012345678904 /* iStatus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D4E5F6012345678909 /* Build configuration list for PBXNativeTarget "iStatus" */;
+			buildPhases = (
+				A1B2C3D4E5F6012345678905 /* Sources */,
+				A1B2C3D4E5F6012345678906 /* Resources */,
+				A1B2C3D4E5F6012345678907 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iStatus;
+			productName = iStatus;
+			productReference = A1B2C3D4E5F6012345678914 /* iStatus.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1B2C3D4E5F6012345678901 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A1B2C3D4E5F6012345678904 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A1B2C3D4E5F6012345678908 /* Build configuration list for PBXProject "iStatus" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1B2C3D4E5F6012345678902 /* iStatus */;
+			productRefGroup = A1B2C3D4E5F6012345678903 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1B2C3D4E5F6012345678904 /* iStatus */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1B2C3D4E5F6012345678906 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F601234567892F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1B2C3D4E5F6012345678905 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F6012345678920 /* iStatusApp.swift in Sources */,
+				A1B2C3D4E5F6012345678922 /* MenuBarView.swift in Sources */,
+				A1B2C3D4E5F6012345678923 /* DashboardView.swift in Sources */,
+				A1B2C3D4E5F6012345678924 /* MiniChartView.swift in Sources */,
+				A1B2C3D4E5F601234567893A /* MemoryStackChartView.swift in Sources */,
+				A1B2C3D4E5F6012345678925 /* RingGaugeView.swift in Sources */,
+				A1B2C3D4E5F6012345678926 /* MetricModels.swift in Sources */,
+				A1B2C3D4E5F6012345678927 /* RingBuffer.swift in Sources */,
+				A1B2C3D4E5F6012345678928 /* MetricsStore.swift in Sources */,
+				A1B2C3D4E5F6012345678929 /* CPUSampler.swift in Sources */,
+				A1B2C3D4E5F601234567892A /* MemorySampler.swift in Sources */,
+				A1B2C3D4E5F601234567892B /* DiskSampler.swift in Sources */,
+				A1B2C3D4E5F601234567892C /* NetworkSampler.swift in Sources */,
+				A1B2C3D4E5F601234567892D /* BatterySampler.swift in Sources */,
+				A1B2C3D4E5F601234567892E /* GPUSampler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1B2C3D4E5F6012345678910 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_NAME = iStatus;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F6012345678911 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_NAME = iStatus;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A1B2C3D4E5F6012345678912 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JL6S58KWK2;
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = iStatus/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yiban.jack.istatus;
+				PRODUCT_NAME = iStatus;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F6012345678913 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JL6S58KWK2;
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = iStatus/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yiban.jack.istatus;
+				PRODUCT_NAME = iStatus;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1B2C3D4E5F6012345678908 /* Build configuration list for PBXProject "iStatus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F6012345678910 /* Debug */,
+				A1B2C3D4E5F6012345678911 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A1B2C3D4E5F6012345678909 /* Build configuration list for PBXNativeTarget "iStatus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F6012345678912 /* Debug */,
+				A1B2C3D4E5F6012345678913 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1B2C3D4E5F6012345678901 /* Project object */;
+}
