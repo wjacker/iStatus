@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-private enum DashboardSection: String, CaseIterable, Identifiable {
+enum DashboardSection: String, CaseIterable, Identifiable {
     case overview = "Overview"
     case cpu = "CPU"
     case memory = "Memory"
@@ -46,15 +46,20 @@ enum TimeRange: String, CaseIterable, Identifiable {
 struct DashboardView: View {
     @EnvironmentObject private var metricsStore: MetricsStore
     @State private var selectedSection: DashboardSection = .overview
-    @State private var selectedRange: TimeRange = .hour24
+    @State private var selectedRange: TimeRange = .min10
+    @State private var refreshTick = Date()
 
     var body: some View {
+        let _ = refreshTick
         HStack(spacing: 0) {
             sidebar
             Divider()
             content
         }
         .background(LinearGradient(colors: [Color("BackgroundTop"), Color("BackgroundBottom")], startPoint: .top, endPoint: .bottom))
+        .onReceive(metricsStore.$sampleTick) { tick in
+            refreshTick = tick
+        }
     }
 
     private var sidebar: some View {
@@ -296,6 +301,7 @@ struct DashboardView: View {
     }
 
     private func filteredSeries(_ type: MetricType) -> [MetricSample] {
+        _ = refreshTick
         let cutoff = Date().addingTimeInterval(-selectedRange.duration)
         return metricsStore.series(type).filter { $0.timestamp >= cutoff }
     }
@@ -1433,5 +1439,276 @@ struct PerCoreGrid: View {
                 .cornerRadius(6)
             }
         }
+    }
+}
+
+struct StatusPopupAppIcon: Identifiable {
+    let id = UUID()
+    let pid: Int?
+    let name: String
+    let bundlePath: String?
+}
+
+struct StatusItemDetailPopoverView: View {
+    @EnvironmentObject private var metricsStore: MetricsStore
+    let section: DashboardSection
+    let onOpenDashboard: () -> Void
+
+    @State private var selectedRange: TimeRange = .min10
+    @State private var refreshTick = Date()
+
+    var body: some View {
+        let _ = refreshTick
+        VStack(alignment: .leading, spacing: 12) {
+            content
+            footer
+        }
+        .padding(12)
+        .frame(width: popupWidth)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(colors: [Color("BackgroundTop"), Color("BackgroundBottom")], startPoint: .top, endPoint: .bottom))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color("CardBorder"), lineWidth: 1)
+                )
+        )
+        .onReceive(metricsStore.$sampleTick) { tick in
+            refreshTick = tick
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch section {
+        case .overview:
+            EmptyView()
+        case .cpu:
+            MetricCard(
+                title: "CPU",
+                value: metricsStore.latestValue(.cpuUsage),
+                unit: "%",
+                series: filteredSeries(.cpuUsage),
+                accent: .pink,
+                range: selectedRange.duration,
+                bucketInterval: selectedRange.bucketInterval
+            ) {
+                SubMetricChartRow(
+                    title: "User",
+                    value: metricsStore.latestValue(.cpuUser),
+                    unit: "%",
+                    series: filteredSeries(.cpuUser),
+                    accent: .pink,
+                    range: selectedRange.duration,
+                    bucketInterval: selectedRange.bucketInterval
+                )
+                SubMetricChartRow(
+                    title: "System",
+                    value: metricsStore.latestValue(.cpuSystem),
+                    unit: "%",
+                    series: filteredSeries(.cpuSystem),
+                    accent: .pink,
+                    range: selectedRange.duration,
+                    bucketInterval: selectedRange.bucketInterval
+                )
+
+                if let detail = metricsStore.cpuDetail {
+                    PerCoreGrid(values: detail.perCore)
+                }
+            }
+        case .memory:
+            MemoryCardView(
+                range: selectedRange.duration,
+                bucketInterval: selectedRange.bucketInterval,
+                appSeries: filteredSeries(.memoryAppBytes),
+                wiredSeries: filteredSeries(.memoryWiredBytes),
+                compressedSeries: filteredSeries(.memoryCompressedBytes)
+            )
+        case .disk:
+            DiskCardView(
+                range: selectedRange.duration,
+                bucketInterval: selectedRange.bucketInterval,
+                readSeries: filteredSeries(.diskReadBytesPerSecond),
+                writeSeries: filteredSeries(.diskWriteBytesPerSecond)
+            )
+        case .network:
+            networkPopupCard
+        case .gpu:
+            MetricCard(
+                title: "GPU",
+                value: metricsStore.latestValue(.gpuUsage),
+                unit: "%",
+                series: filteredSeries(.gpuUsage),
+                accent: .orange,
+                range: selectedRange.duration,
+                bucketInterval: selectedRange.bucketInterval,
+                note: metricsStore.isGPUSupported ? nil : "GPU usage not available"
+            ) {
+                EmptyView()
+            }
+        case .battery:
+            BatteryCardView(
+                range: selectedRange.duration,
+                bucketInterval: selectedRange.bucketInterval,
+                batterySeries: filteredSeries(.batteryPercent)
+            )
+        }
+    }
+
+    private var networkPopupCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 24) {
+                    DiskRateMetric(title: "Upload", value: kbpsToBytes(metricsStore.latestValue(.networkUpKBps)), color: .pink)
+                    DiskRateMetric(title: "Download", value: kbpsToBytes(metricsStore.latestValue(.networkDownKBps)), color: .blue)
+                }
+
+                DualBarChartView(
+                    upSamples: filteredSeries(.networkUpKBps),
+                    downSamples: filteredSeries(.networkDownKBps),
+                    upColor: .pink,
+                    downColor: .blue,
+                    range: selectedRange.duration,
+                    bucketInterval: selectedRange.bucketInterval
+                )
+                .frame(height: 110)
+
+                HStack {
+                    Text("Upload \(peakLabel(for: filteredSeries(.networkUpKBps)))")
+                    Spacer()
+                    Text("Download \(peakLabel(for: filteredSeries(.networkDownKBps)))")
+                }
+                .font(.system(.callout, design: .rounded))
+                .foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(14)
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(16)
+
+            if let interface = activeInterfaceName {
+                HStack(spacing: 8) {
+                    Image(systemName: "wifi")
+                        .foregroundStyle(.blue)
+                    Text(interface)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 6)
+            }
+
+            SectionHeader(title: "PUBLIC IP ADDRESSES")
+            HStack {
+                Text(metricsStore.ipInfo.publicIPv4 ?? "--")
+                    .font(.system(.title3, design: .rounded))
+                    .foregroundStyle(.white)
+                Spacer()
+            }
+
+            SectionHeader(title: "IP ADDRESSES")
+            ForEach(metricsStore.ipInfo.localIPv4, id: \.self) { ip in
+                IPListRow(text: ip)
+            }
+
+            SectionHeader(title: "PROCESSES")
+            ProcessHeaderRow()
+            ForEach(metricsStore.networkProcesses) { proc in
+                ProcessRow(stat: proc)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color("CardBackground"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color("CardBorder"), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
+        )
+    }
+
+    private var footer: some View {
+        HStack(spacing: 10) {
+            ForEach(footerIcons) { app in
+                AppIconView(pid: app.pid, fallbackName: app.name, bundlePath: app.bundlePath)
+                    .frame(width: 22, height: 22)
+            }
+
+            Spacer()
+
+            Button {
+                onOpenDashboard()
+            } label: {
+                Label("Open Dashboard", systemImage: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 2)
+    }
+
+    private var footerIcons: [StatusPopupAppIcon] {
+        switch section {
+        case .network:
+            return metricsStore.networkProcesses.prefix(5).map { StatusPopupAppIcon(pid: $0.pid, name: $0.name, bundlePath: $0.bundlePath) }
+        case .disk:
+            return metricsStore.diskProcesses.prefix(5).map { StatusPopupAppIcon(pid: $0.pid, name: $0.name, bundlePath: $0.bundlePath) }
+        case .memory:
+            return metricsStore.memoryProcesses.prefix(5).map { StatusPopupAppIcon(pid: $0.pid, name: $0.name, bundlePath: $0.bundlePath) }
+        case .battery:
+            if let app = metricsStore.significantEnergyApp {
+                return [StatusPopupAppIcon(pid: app.pid, name: app.name, bundlePath: app.bundlePath)]
+            }
+            return runningAppFallbackIcons
+        case .cpu, .gpu, .overview:
+            return runningAppFallbackIcons
+        }
+    }
+
+    private var runningAppFallbackIcons: [StatusPopupAppIcon] {
+        NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular }
+            .prefix(5)
+            .map {
+                StatusPopupAppIcon(
+                    pid: Int($0.processIdentifier),
+                    name: $0.localizedName ?? "App",
+                    bundlePath: $0.bundleURL?.path
+                )
+            }
+    }
+
+    private var popupWidth: CGFloat {
+        switch section {
+        case .battery:
+            return 760
+        case .disk, .memory:
+            return 700
+        default:
+            return 320
+        }
+    }
+
+    private var activeInterfaceName: String? {
+        let serviceOrder = ["Wi-Fi", "Ethernet", "USB 10/100/1000 LAN", "Thunderbolt Bridge"]
+        return serviceOrder.first { _ in !metricsStore.ipInfo.localIPv4.isEmpty } ?? (!metricsStore.ipInfo.localIPv4.isEmpty ? "Network" : nil)
+    }
+
+    private func kbpsToBytes(_ value: Double?) -> Double? {
+        guard let value else { return nil }
+        return value * 1024
+    }
+
+    private func peakLabel(for series: [MetricSample]) -> String {
+        let maxValue = series.map(\.value).max() ?? 0
+        return ByteCountFormatter.string(fromByteCount: Int64(maxValue * 1024), countStyle: .binary) + "/s"
+    }
+
+    private func filteredSeries(_ type: MetricType) -> [MetricSample] {
+        _ = refreshTick
+        let cutoff = Date().addingTimeInterval(-selectedRange.duration)
+        return metricsStore.series(type).filter { $0.timestamp >= cutoff }
     }
 }

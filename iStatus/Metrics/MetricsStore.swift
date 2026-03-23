@@ -1,5 +1,60 @@
 import Foundation
 
+actor ProcessMetricsWorker {
+    private let diskProcessSampler = DiskProcessSampler()
+    private let networkProcessSampler = NetworkProcessSampler()
+    private let memoryProcessSampler = MemoryProcessSampler()
+    private let significantEnergySampler = SignificantEnergySampler()
+
+    func sampleDisk(limit: Int) -> (readBytesPerSecond: Double, writeBytesPerSecond: Double, processes: [ProcessDiskStat])? {
+        diskProcessSampler.sample(limit: limit)
+    }
+
+    func sampleNetwork(limit: Int) -> [ProcessNetStat] {
+        networkProcessSampler.sampleTop(limit: limit)
+    }
+
+    func sampleMemory(limit: Int) -> [ProcessMemStat] {
+        memoryProcessSampler.sampleTop(limit: limit)
+    }
+
+    func sampleSignificantEnergy() -> SignificantEnergyApp? {
+        significantEnergySampler.sampleTopApp()
+    }
+}
+
+actor DiskProcessMetricsWorker {
+    private let sampler = DiskProcessSampler()
+
+    func sample(limit: Int) -> (readBytesPerSecond: Double, writeBytesPerSecond: Double, processes: [ProcessDiskStat])? {
+        sampler.sample(limit: limit)
+    }
+}
+
+actor NetworkProcessMetricsWorker {
+    private let sampler = NetworkProcessSampler()
+
+    func sample(limit: Int) -> [ProcessNetStat] {
+        sampler.sampleTop(limit: limit)
+    }
+}
+
+actor MemoryProcessMetricsWorker {
+    private let sampler = MemoryProcessSampler()
+
+    func sample(limit: Int) -> [ProcessMemStat] {
+        sampler.sampleTop(limit: limit)
+    }
+}
+
+actor SignificantEnergyMetricsWorker {
+    private let sampler = SignificantEnergySampler()
+
+    func sample() -> SignificantEnergyApp? {
+        sampler.sampleTopApp()
+    }
+}
+
 @MainActor
 final class MetricsStore: ObservableObject {
     private let retention: TimeInterval = 24 * 60 * 60
@@ -7,17 +62,20 @@ final class MetricsStore: ObservableObject {
 
     private let cpuSampler = CPUSampler()
     private let memorySampler = MemorySampler()
-    private let memoryProcessSampler = MemoryProcessSampler()
     private let diskSampler = DiskSampler()
-    private let diskProcessSampler = DiskProcessSampler()
     private let networkSampler = NetworkSampler()
-    private let processSampler = NetworkProcessSampler()
     private let gpuSampler = GPUSampler()
     private let batterySampler = BatterySampler()
-    private let significantEnergySampler = SignificantEnergySampler()
+    private let diskProcessWorker = DiskProcessMetricsWorker()
+    private let networkProcessWorker = NetworkProcessMetricsWorker()
+    private let memoryProcessWorker = MemoryProcessMetricsWorker()
+    private let significantEnergyWorker = SignificantEnergyMetricsWorker()
 
     private var task: Task<Void, Never>?
     private var seriesByType: [MetricType: RollingSeries] = [:]
+    private var isRefreshingNetworkProcesses = false
+    private var isRefreshingMemoryProcesses = false
+    private var isRefreshingSignificantEnergy = false
 
     @Published private(set) var latest: [MetricType: MetricSample] = [:]
     @Published private(set) var cpuDetail: CPUDetail?
@@ -31,6 +89,7 @@ final class MetricsStore: ObservableObject {
     @Published private(set) var ipInfo: IPInfo = IPInfo()
     @Published private(set) var networkProcesses: [ProcessNetStat] = []
     @Published private(set) var memoryProcesses: [ProcessMemStat] = []
+    @Published private(set) var sampleTick: Date = .distantPast
 
     var isGPUSupported: Bool { gpuSampler.isSupported }
 
@@ -38,7 +97,9 @@ final class MetricsStore: ObservableObject {
     private var lastLocalIPFetch: Date?
     private var lastProcessFetch: Date?
     private var lastMemoryProcessFetch: Date?
+    private var lastSignificantEnergyFetch: Date?
     private var lastPersistedAt: Date?
+    private var sampleCount: Int = 0
 
     init() {
         MetricType.allCases.forEach { type in
@@ -51,11 +112,18 @@ final class MetricsStore: ObservableObject {
 
     func start() {
         guard task == nil else { return }
-        task = Task { [weak self] in
-            guard let self else { return }
+        debugLog("MetricsStore start requested")
+        task = Task.detached(priority: .utility) { [weak self] in
+            await MainActor.run {
+                debugLog("MetricsStore sampling loop started")
+            }
             while !Task.isCancelled {
+                guard let self else { return }
+                let startedAt = Date()
                 await self.sampleOnce()
-                try? await Task.sleep(nanoseconds: UInt64(sampleInterval * 1_000_000_000))
+                let elapsed = Date().timeIntervalSince(startedAt)
+                let remaining = max(self.sampleInterval - elapsed, 0.1)
+                try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
             }
         }
     }
@@ -75,6 +143,12 @@ final class MetricsStore: ObservableObject {
 
     private func sampleOnce() async {
         let timestamp = Date()
+        sampleCount += 1
+        let shouldUpdateNetworkProcesses = shouldRefreshNetworkProcesses(now: timestamp)
+        let shouldUpdateMemoryProcesses = shouldRefreshMemoryProcesses(now: timestamp)
+        let shouldUpdateSignificantEnergy = shouldRefreshSignificantEnergy(now: timestamp)
+
+        async let diskProcessResult = diskProcessWorker.sample(limit: 5)
 
         if let cpu = cpuSampler.sampleDetailed() {
             cpuDetail = cpu
@@ -93,14 +167,13 @@ final class MetricsStore: ObservableObject {
             append(.memoryCompressedBytes, value: Double(memory.compressedBytes), timestamp: timestamp)
             append(.memoryFreeBytes, value: Double(memory.freeBytes), timestamp: timestamp)
         }
-        updateMemoryProcessesIfNeeded(now: timestamp)
 
         if let disk = diskSampler.sample() {
             append(.diskUsedPercent, value: disk, timestamp: timestamp)
         }
         let volumes = diskSampler.sampleDetailed()
         diskVolumes = volumes
-        if let sample = diskProcessSampler.sample(limit: 5) {
+        if let sample = await diskProcessResult {
             append(.diskReadBytesPerSecond, value: sample.readBytesPerSecond, timestamp: timestamp)
             append(.diskWriteBytesPerSecond, value: sample.writeBytesPerSecond, timestamp: timestamp)
             diskProcesses = sample.processes
@@ -146,7 +219,6 @@ final class MetricsStore: ObservableObject {
 
         updateLocalIPsIfNeeded(now: timestamp)
         updatePublicIPsIfNeeded(now: timestamp)
-        updateProcessNetworkIfNeeded(now: timestamp)
 
         if let gpu = gpuSampler.sample() {
             append(.gpuUsage, value: gpu, timestamp: timestamp)
@@ -156,15 +228,32 @@ final class MetricsStore: ObservableObject {
             batteryDetail = detail
             append(.batteryPercent, value: detail.percent, timestamp: timestamp)
         }
-        significantEnergyApp = significantEnergySampler.sampleTopApp()
 
+        refreshNetworkProcessesIfNeeded(shouldRefresh: shouldUpdateNetworkProcesses)
+        refreshMemoryProcessesIfNeeded(shouldRefresh: shouldUpdateMemoryProcesses)
+        refreshSignificantEnergyIfNeeded(shouldRefresh: shouldUpdateSignificantEnergy)
+
+        if sampleCount <= 5 || sampleCount % 10 == 0 {
+            debugLog(
+                "sample #\(sampleCount) cpu=\(formatDebug(latestValue(.cpuUsage))) mem=\(formatDebug(latestValue(.memoryUsedPercent))) net=\(formatDebug(latestValue(.networkTotalKBps)))"
+            )
+        }
+
+        sampleTick = timestamp
         persistIfNeeded(now: timestamp)
     }
 
     private func append(_ type: MetricType, value: Double, timestamp: Date) {
         let sample = MetricSample(timestamp: timestamp, value: value)
-        latest[type] = sample
+        var updatedLatest = latest
+        updatedLatest[type] = sample
+        latest = updatedLatest
         seriesByType[type]?.append(sample)
+    }
+
+    private func formatDebug(_ value: Double?) -> String {
+        guard let value else { return "nil" }
+        return String(format: "%.1f", value)
     }
 
     private func preferredDiskVolume(from volumes: [DiskVolumeStat]) -> DiskVolumeStat? {
@@ -185,36 +274,80 @@ final class MetricsStore: ObservableObject {
             return
         }
         lastPublicIPFetch = now
-        Task.detached { [weak self] in
+        Task { [weak self] in
             async let v4 = Self.fetchPublicIP(url: URL(string: "https://api.ipify.org")!)
             async let v6 = Self.fetchPublicIP(url: URL(string: "https://api64.ipify.org")!)
             let (ipv4, ipv6) = await (v4, v6)
-            await MainActor.run {
-                self?.ipInfo.publicIPv4 = ipv4
-                self?.ipInfo.publicIPv6 = ipv6
-            }
+            guard let self else { return }
+            self.ipInfo.publicIPv4 = ipv4
+            self.ipInfo.publicIPv6 = ipv6
         }
     }
 
-    private func updateProcessNetworkIfNeeded(now: Date) {
+    private func shouldRefreshNetworkProcesses(now: Date) -> Bool {
         if let last = lastProcessFetch, now.timeIntervalSince(last) < 2 {
-            return
+            return false
         }
         lastProcessFetch = now
-        let stats = processSampler.sampleTop(limit: 5)
-        if !stats.isEmpty {
-            networkProcesses = stats
+        return true
+    }
+
+    private func shouldRefreshMemoryProcesses(now: Date) -> Bool {
+        if let last = lastMemoryProcessFetch, now.timeIntervalSince(last) < 2 {
+            return false
+        }
+        lastMemoryProcessFetch = now
+        return true
+    }
+
+    private func shouldRefreshSignificantEnergy(now: Date) -> Bool {
+        if let last = lastSignificantEnergyFetch, now.timeIntervalSince(last) < 10 {
+            return false
+        }
+        lastSignificantEnergyFetch = now
+        return true
+    }
+
+    private func refreshNetworkProcessesIfNeeded(shouldRefresh: Bool) {
+        guard shouldRefresh, !isRefreshingNetworkProcesses else { return }
+        isRefreshingNetworkProcesses = true
+        let worker = networkProcessWorker
+
+        Task(priority: .utility) { [weak self] in
+            let stats = await worker.sample(limit: 5)
+            guard let self else { return }
+            if !stats.isEmpty {
+                self.networkProcesses = stats
+            }
+            self.isRefreshingNetworkProcesses = false
         }
     }
 
-    private func updateMemoryProcessesIfNeeded(now: Date) {
-        if let last = lastMemoryProcessFetch, now.timeIntervalSince(last) < 2 {
-            return
+    private func refreshMemoryProcessesIfNeeded(shouldRefresh: Bool) {
+        guard shouldRefresh, !isRefreshingMemoryProcesses else { return }
+        isRefreshingMemoryProcesses = true
+        let worker = memoryProcessWorker
+
+        Task(priority: .utility) { [weak self] in
+            let stats = await worker.sample(limit: 5)
+            guard let self else { return }
+            if !stats.isEmpty {
+                self.memoryProcesses = stats
+            }
+            self.isRefreshingMemoryProcesses = false
         }
-        lastMemoryProcessFetch = now
-        let stats = memoryProcessSampler.sampleTop(limit: 5)
-        if !stats.isEmpty {
-            memoryProcesses = stats
+    }
+
+    private func refreshSignificantEnergyIfNeeded(shouldRefresh: Bool) {
+        guard shouldRefresh, !isRefreshingSignificantEnergy else { return }
+        isRefreshingSignificantEnergy = true
+        let worker = significantEnergyWorker
+
+        Task(priority: .utility) { [weak self] in
+            let app = await worker.sample()
+            guard let self else { return }
+            self.significantEnergyApp = app
+            self.isRefreshingSignificantEnergy = false
         }
     }
 
