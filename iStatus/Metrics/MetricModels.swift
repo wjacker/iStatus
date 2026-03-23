@@ -1,12 +1,12 @@
 import Foundation
 
-struct MetricSample: Identifiable {
+struct MetricSample: Identifiable, Sendable {
     let id = UUID()
     let timestamp: Date
     let value: Double
 }
 
-enum MetricType: String, CaseIterable, Hashable {
+enum MetricType: String, CaseIterable, Hashable, Sendable {
     case cpuUsage
     case cpuUser
     case cpuSystem
@@ -26,14 +26,14 @@ enum MetricType: String, CaseIterable, Hashable {
     case batteryPercent
 }
 
-struct CPUDetail {
+struct CPUDetail: Sendable {
     let overall: Double
     let user: Double
     let system: Double
     let perCore: [Double]
 }
 
-struct MemoryDetail {
+struct MemoryDetail: Sendable {
     let appBytes: UInt64
     let wiredBytes: UInt64
     let compressedBytes: UInt64
@@ -47,7 +47,7 @@ struct MemoryDetail {
     let swapTotalBytes: UInt64
 }
 
-struct DiskVolumeStat: Identifiable {
+struct DiskVolumeStat: Identifiable, Sendable {
     let id = UUID()
     let name: String
     let usedPercent: Double
@@ -57,13 +57,13 @@ struct DiskVolumeStat: Identifiable {
     let freeBytes: UInt64
 }
 
-struct DiskDetail {
+struct DiskDetail: Sendable {
     let volume: DiskVolumeStat
     let readBytesPerSecond: Double
     let writeBytesPerSecond: Double
 }
 
-struct ProcessDiskStat: Identifiable {
+struct ProcessDiskStat: Identifiable, Sendable {
     let id = UUID()
     let pid: Int?
     let name: String
@@ -72,13 +72,13 @@ struct ProcessDiskStat: Identifiable {
     let bundlePath: String?
 }
 
-struct NetworkDetail {
+struct NetworkDetail: Sendable {
     let downKBps: Double
     let upKBps: Double
     var totalKBps: Double { downKBps + upKBps }
 }
 
-struct BatteryDetail {
+struct BatteryDetail: Sendable {
     let percent: Double
     let healthPercent: Double?
     let adapterPowerWatts: Double?
@@ -96,20 +96,20 @@ struct BatteryDetail {
     let lowPowerModeEnabled: Bool
 }
 
-struct SignificantEnergyApp {
+struct SignificantEnergyApp: Sendable {
     let pid: Int?
     let name: String
     let bundlePath: String?
 }
 
-struct IPInfo {
+struct IPInfo: Sendable {
     var publicIPv4: String? = nil
     var publicIPv6: String? = nil
     var localIPv4: [String] = []
     var localIPv6: [String] = []
 }
 
-struct ProcessNetStat: Identifiable {
+struct ProcessNetStat: Identifiable, Sendable {
     let id = UUID()
     let pid: Int?
     let name: String
@@ -118,7 +118,7 @@ struct ProcessNetStat: Identifiable {
     let bundlePath: String?
 }
 
-struct ProcessMemStat: Identifiable {
+struct ProcessMemStat: Identifiable, Sendable {
     let id = UUID()
     let pid: Int?
     let name: String

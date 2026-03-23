@@ -22,7 +22,7 @@ final class CPUSampler {
         }
 
         guard let previousInfo else {
-            return nil
+            return bootstrapDetail(from: info, cpuCount: cpuCount)
         }
 
         var totalTicks: UInt64 = 0
@@ -59,5 +59,37 @@ final class CPUSampler {
 
     func sample() -> Double? {
         sampleDetailed()?.overall
+    }
+
+    private func bootstrapDetail(from info: processor_info_array_t, cpuCount: natural_t) -> CPUDetail? {
+        var totalTicks: UInt64 = 0
+        var idleTicks: UInt64 = 0
+        var userTicks: UInt64 = 0
+        var systemTicks: UInt64 = 0
+        let cpuInfo = Int(CPU_STATE_MAX)
+        var perCoreUsage: [Double] = []
+
+        for cpu in 0..<Int(cpuCount) {
+            let base = cpu * cpuInfo
+            let user = UInt64(info[base + Int(CPU_STATE_USER)])
+            let system = UInt64(info[base + Int(CPU_STATE_SYSTEM)])
+            let nice = UInt64(info[base + Int(CPU_STATE_NICE)])
+            let idle = UInt64(info[base + Int(CPU_STATE_IDLE)])
+            let total = user + system + nice + idle
+
+            totalTicks += total
+            idleTicks += idle
+            userTicks += user
+            systemTicks += system
+
+            let usage = total > 0 ? (Double(total - idle) / Double(total)) * 100 : 0
+            perCoreUsage.append(usage)
+        }
+
+        guard totalTicks > 0 else { return nil }
+        let overall = (Double(totalTicks - idleTicks) / Double(totalTicks)) * 100
+        let userPercent = (Double(userTicks) / Double(totalTicks)) * 100
+        let systemPercent = (Double(systemTicks) / Double(totalTicks)) * 100
+        return CPUDetail(overall: overall, user: userPercent, system: systemPercent, perCore: perCoreUsage)
     }
 }

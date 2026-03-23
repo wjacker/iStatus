@@ -38,7 +38,7 @@ final class NetworkSampler {
             previousTimestamp = now
             previousInBytes = totalIn
             previousOutBytes = totalOut
-            return nil
+            return NetworkDetail(downKBps: 0, upKBps: 0)
         }
 
         let deltaIn = totalIn >= previousInBytes ? (totalIn - previousInBytes) : 0
