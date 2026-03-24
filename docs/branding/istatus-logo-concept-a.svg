@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgA" x1="80" y1="64" x2="432" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16304F"/>
+      <stop offset="1" stop-color="#0B1324"/>
+    </linearGradient>
+    <linearGradient id="ringA" x1="154" y1="144" x2="365" y2="371" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7EF2C6"/>
+      <stop offset="0.5" stop-color="#57D0FF"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+    <filter id="shadowA" x="54" y="58" width="404" height="404" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#020617" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect x="64" y="64" width="384" height="384" rx="96" fill="url(#bgA)"/>
+  <rect x="64.75" y="64.75" width="382.5" height="382.5" rx="95.25" stroke="white" stroke-opacity="0.08" stroke-width="1.5"/>
+  <g filter="url(#shadowA)">
+    <path d="M360 166C333.492 142.476 296.91 128.226 256.999 128.226C174.159 128.226 107 195.385 107 278.225C107 361.065 174.159 428.224 256.999 428.224C326.879 428.224 385.602 380.418 401.951 315.661" stroke="url(#ringA)" stroke-width="34" stroke-linecap="round"/>
+  </g>
+  <circle cx="374" cy="168" r="16" fill="#7EF2C6"/>
+  <circle cx="374" cy="168" r="28" fill="#7EF2C6" fill-opacity="0.16"/>
+  <path d="M143 290H193L225 229L255 312L287 243L320 290H369" stroke="white" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

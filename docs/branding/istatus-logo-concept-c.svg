@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgC" x1="76" y1="72" x2="436" y2="444" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#11233C"/>
+      <stop offset="1" stop-color="#0A1323"/>
+    </linearGradient>
+    <linearGradient id="markC" x1="174" y1="144" x2="349" y2="356" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7EF2C6"/>
+      <stop offset="0.45" stop-color="#57D0FF"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="384" height="384" rx="96" fill="url(#bgC)"/>
+  <rect x="64.75" y="64.75" width="382.5" height="382.5" rx="95.25" stroke="white" stroke-opacity="0.08" stroke-width="1.5"/>
+  <circle cx="194" cy="164" r="18" fill="#7EF2C6"/>
+  <rect x="176" y="198" width="36" height="140" rx="18" fill="url(#markC)"/>
+  <path d="M320.421 165C284.874 165 256 188.505 256 217.5C256 240.279 273.813 252.423 307.424 264.126C339.268 275.214 352 284.061 352 300.5C352 319.278 334.981 335 311.632 335C289.798 335 270.29 322.633 258.54 302.791" stroke="url(#markC)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

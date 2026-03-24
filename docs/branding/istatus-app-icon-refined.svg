@@ -1,0 +1,52 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="outerBg" x1="180" y1="132" x2="842" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1C3B61"/>
+      <stop offset="0.48" stop-color="#112544"/>
+      <stop offset="1" stop-color="#09111F"/>
+    </linearGradient>
+    <radialGradient id="topGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(338 216) rotate(48) scale(470 540)">
+      <stop stop-color="#7DD3FC" stop-opacity="0.1"/>
+      <stop offset="0.5" stop-color="#60A5FA" stop-opacity="0.045"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="innerPanel" x1="260" y1="212" x2="768" y2="808" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D3659"/>
+      <stop offset="1" stop-color="#0D1729"/>
+    </linearGradient>
+    <linearGradient id="ringStroke" x1="312" y1="270" x2="736" y2="744" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8CF4CF"/>
+      <stop offset="0.46" stop-color="#5FD7FF"/>
+      <stop offset="1" stop-color="#4486FF"/>
+    </linearGradient>
+    <radialGradient id="ringGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(516 518) rotate(90) scale(296)">
+      <stop stop-color="#57D0FF" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#57D0FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadowOuter" x="92" y="92" width="840" height="856" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="38" flood-color="#020617" flood-opacity="0.28"/>
+    </filter>
+    <filter id="shadowInner" x="204" y="204" width="616" height="616" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#06101E" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadowOuter)">
+    <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#outerBg)"/>
+    <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#topGlow)"/>
+  </g>
+
+  <g filter="url(#shadowInner)">
+    <rect x="212" y="212" width="600" height="600" rx="156" fill="url(#innerPanel)"/>
+  </g>
+
+  <circle cx="512" cy="512" r="300" fill="url(#ringGlow)"/>
+
+  <path d="M703 305C649.977 257.953 582.843 232 510.5 232C348.404 232 217 363.404 217 525.5C217 687.596 348.404 819 510.5 819C647.224 819 762.364 724.923 794.425 597.706" stroke="url(#ringStroke)" stroke-width="66" stroke-linecap="round"/>
+
+  <circle cx="731" cy="309" r="30" fill="#8CF4CF"/>
+  <circle cx="731" cy="309" r="54" fill="#8CF4CF" fill-opacity="0.17"/>
+
+  <path d="M294 551H398L451 447L510 620L571 484L626 551H730" stroke="white" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M294 551H398L451 447L510 620L571 484L626 551H730" stroke="#A7EEFF" stroke-opacity="0.18" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
