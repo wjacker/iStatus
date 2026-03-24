@@ -16,7 +16,6 @@ The current app covers:
 - Memory usage and memory composition
 - Disk usage and disk throughput
 - Network throughput, IP information, and top network-active processes
-- GPU usage when available on the current machine
 - Battery level, health, power, and significant energy usage
 
 ## Why iStatus
@@ -38,7 +37,7 @@ The current app covers:
 ### Dashboard
 
 - Overview screen for the most important metrics
-- Dedicated sections for CPU, Memory, Disk, Network, GPU, and Battery
+- Dedicated sections for CPU, Memory, Disk, Network, and Battery
 - Time-range switching for historical inspection
 - Small, dense charts optimized for dark UI
 
@@ -58,30 +57,29 @@ The current app covers:
 
 ## Screenshots
 
-Screenshots are intended to live under `docs/screenshots/`.
+### Menu Bar
 
-Recommended files:
+Compact always-on metrics in the macOS menu bar.
 
-- `docs/screenshots/menu-bar.png`
-- `docs/screenshots/network-popover.png`
-- `docs/screenshots/dashboard-overview.png`
-- `docs/screenshots/battery-panel.png`
-
-Once those images are added, this section can be rendered like a typical GitHub project homepage:
-
-```md
 ![Menu Bar](docs/screenshots/menu-bar.png)
+
+### Network Popover
+
+Focused network detail with live throughput, IP addresses, and top processes.
+
 ![Network Popover](docs/screenshots/network-popover.png)
+
+### Dashboard Overview
+
+The main dashboard combines historical charts with dense system summaries.
+
 ![Dashboard Overview](docs/screenshots/dashboard-overview.png)
+
+### Battery Panel
+
+Battery health, power adapter state, capacity, and energy usage in one view.
+
 ![Battery Panel](docs/screenshots/battery-panel.png)
-```
-
-Suggested screenshot set:
-
-- Menu bar items enabled with live metrics
-- Network detail popover with process table
-- Main dashboard overview
-- Battery detail view
 
 ## App Behavior
 
@@ -144,7 +142,7 @@ If icons or assets do not refresh immediately:
   In-memory history storage for time-series samples.
 
 - `iStatus/Metrics/Samplers/`
-  System samplers for CPU, memory, disk, network, GPU, and battery.
+  System samplers for CPU, memory, disk, network, temperature, and battery.
 
 - `iStatus/Resources/Assets.xcassets`
   App icon, in-app icon assets, and shared color assets.
@@ -163,7 +161,6 @@ If icons or assets do not refresh immediately:
 
 ## Notes On Data Availability
 
-- GPU utilization is best-effort and may not be available on all Macs
 - Battery-specific details only appear on machines that expose that data
 - Process tables intentionally show top items rather than exhaustive system process dumps
 
@@ -184,7 +181,6 @@ Potential next steps:
 - Configurable sampling intervals
 - Search and filtering for process tables
 - Snapshot export
-- More robust GPU support across hardware variations
 - Additional dashboard customization
 
 ## License
