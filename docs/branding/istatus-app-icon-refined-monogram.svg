@@ -10,10 +10,6 @@
       <stop offset="0.5" stop-color="#60A5FA" stop-opacity="0.045"/>
       <stop offset="1" stop-color="#60A5FA" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="innerPanel" x1="260" y1="212" x2="768" y2="808" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1D3659"/>
-      <stop offset="1" stop-color="#0D1729"/>
-    </linearGradient>
     <linearGradient id="ringStroke" x1="312" y1="270" x2="736" y2="744" gradientUnits="userSpaceOnUse">
       <stop stop-color="#8CF4CF"/>
       <stop offset="0.46" stop-color="#5FD7FF"/>
@@ -36,9 +32,8 @@
 
   <rect x="0" y="0" width="1024" height="1024" fill="url(#outerBg)"/>
   <rect x="0" y="0" width="1024" height="1024" fill="url(#topGlow)"/>
-  <rect x="132" y="132" width="760" height="760" rx="164" fill="url(#innerPanel)"/>
 
-  <circle cx="512" cy="512" r="300" fill="url(#ringGlow)"/>
+  <circle cx="512" cy="512" r="340" fill="url(#ringGlow)"/>
 
   <path d="M703 305C649.977 257.953 582.843 232 510.5 232C348.404 232 217 363.404 217 525.5C217 687.596 348.404 819 510.5 819C647.224 819 762.364 724.923 794.425 597.706" stroke="url(#ringStroke)" stroke-width="66" stroke-linecap="round"/>
 
