@@ -298,13 +298,14 @@ final class AppWindowController {
 
             let controller = NSHostingController(rootView: rootView)
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 900, height: 640),
+                contentRect: NSRect(x: 0, y: 0, width: 1180, height: 820),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
             window.title = "iStatus"
             window.isReleasedWhenClosed = false
+            window.minSize = NSSize(width: 1040, height: 760)
             window.center()
             window.contentViewController = controller
             dashboardWindow = window
