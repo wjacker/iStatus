@@ -6,10 +6,14 @@ enum MenuBarMetricItem: String, CaseIterable, Identifiable {
     case disk
     case cpu
     case memory
-    case gpu
+    case temperature
     case battery
 
     var id: String { rawValue }
+
+    static var visibleCases: [MenuBarMetricItem] {
+        [.network, .disk, .cpu, .memory, .battery]
+    }
 
     var title: String {
         switch self {
@@ -17,7 +21,7 @@ enum MenuBarMetricItem: String, CaseIterable, Identifiable {
         case .disk: return "Disk"
         case .cpu: return "CPU"
         case .memory: return "Memory"
-        case .gpu: return "GPU"
+        case .temperature: return "CPU Temp"
         case .battery: return "Battery"
         }
     }
@@ -28,7 +32,7 @@ enum MenuBarMetricItem: String, CaseIterable, Identifiable {
         case .disk: return "internaldrive"
         case .cpu: return "cpu"
         case .memory: return "memorychip"
-        case .gpu: return "sparkles"
+        case .temperature: return "thermometer.medium"
         case .battery: return "battery.100"
         }
     }
@@ -41,7 +45,7 @@ enum MenuBarMetricItem: String, CaseIterable, Identifiable {
         switch self {
         case .network, .disk, .cpu, .memory, .battery:
             return true
-        case .gpu:
+        case .temperature:
             return false
         }
     }
@@ -87,7 +91,7 @@ final class MenuBarSettingsStore: ObservableObject {
     }
 
     var activeItems: [MenuBarMetricItem] {
-        MenuBarMetricItem.allCases.filter { isEnabled($0) }
+        MenuBarMetricItem.visibleCases.filter { isEnabled($0) }
     }
 }
 
@@ -121,7 +125,6 @@ struct MenuBarView: View {
             MenuMetricRow(title: "Memory", value: metricsStore.latestValue(.memoryUsedPercent))
             MenuMetricRow(title: "Disk", value: metricsStore.latestValue(.diskUsedPercent))
             MenuMetricRow(title: "Network", value: metricsStore.latestValue(.networkTotalKBps), suffix: "KB/s")
-            MenuMetricRow(title: "GPU", value: metricsStore.latestValue(.gpuUsage))
             MenuMetricRow(title: "Battery", value: metricsStore.latestValue(.batteryPercent))
 
             Divider()
@@ -281,7 +284,7 @@ struct MenuBarSettingsView: View {
                 Text("Visible Items")
                     .font(.headline)
 
-                ForEach(MenuBarMetricItem.allCases) { item in
+                ForEach(MenuBarMetricItem.visibleCases) { item in
                     Toggle(isOn: binding(for: item)) {
                         HStack(spacing: 10) {
                             Image(systemName: item.icon)
@@ -322,8 +325,8 @@ struct MenuBarSettingsView: View {
             return "CPU \(formatPercent(metricsStore.latestValue(.cpuUsage)))"
         case .memory:
             return "MEM \(formatPercent(metricsStore.latestValue(.memoryUsedPercent)))"
-        case .gpu:
-            return "GPU \(formatPercent(metricsStore.latestValue(.gpuUsage)))"
+        case .temperature:
+            return "TEMP \(formatTemperature(metricsStore.latestValue(.cpuTemperature)))"
         case .battery:
             return "BAT \(formatPercent(metricsStore.latestValue(.batteryPercent)))"
         }
@@ -348,8 +351,8 @@ struct MenuBarSettingsView: View {
             return StatusBarStripSegment(kind: .metric(title: "CPU", value: formatPercent(metricsStore.latestValue(.cpuUsage))))
         case .memory:
             return StatusBarStripSegment(kind: .metric(title: "MEM", value: formatPercent(metricsStore.latestValue(.memoryUsedPercent))))
-        case .gpu:
-            return StatusBarStripSegment(kind: .metric(title: "GPU", value: formatPercent(metricsStore.latestValue(.gpuUsage))))
+        case .temperature:
+            return StatusBarStripSegment(kind: .metric(title: "TEMP", value: formatTemperature(metricsStore.latestValue(.cpuTemperature))))
         case .battery:
             return StatusBarStripSegment(kind: .metric(title: "BAT", value: formatPercent(metricsStore.latestValue(.batteryPercent))))
         }
@@ -358,6 +361,11 @@ struct MenuBarSettingsView: View {
     private func formatPercent(_ value: Double?) -> String {
         guard let value else { return "--" }
         return String(format: "%.0f%%", value)
+    }
+
+    private func formatTemperature(_ value: Double?) -> String {
+        guard let value else { return "--" }
+        return String(format: "%.0f°", value)
     }
 
     private func formatRate(_ value: Double?) -> String {

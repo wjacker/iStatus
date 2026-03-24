@@ -1,7 +1,6 @@
 import SwiftUI
 import AppKit
 import Combine
-
 @inline(__always)
 func debugLog(_ message: String) {
     fputs("[iStatus] \(message)\n", stderr)
@@ -54,7 +53,7 @@ final class StatusBarController: NSObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] enabledItems in
                 let activeItems = Set(
-                    MenuBarMetricItem.allCases.filter { enabledItems[$0] ?? $0.defaultEnabled }
+                    MenuBarMetricItem.visibleCases.filter { enabledItems[$0] ?? $0.defaultEnabled }
                 )
                 self?.syncStatusItems(activeItems: activeItems)
                 self?.refreshStatusItems()
@@ -70,7 +69,7 @@ final class StatusBarController: NSObject {
     }
 
     private func syncStatusItems(activeItems: Set<MenuBarMetricItem>) {
-        for item in MenuBarMetricItem.allCases {
+        for item in MenuBarMetricItem.visibleCases {
             let statusItem: NSStatusItem
             if let existing = statusItems[item] {
                 statusItem = existing
@@ -237,8 +236,8 @@ final class StatusBarController: NSObject {
             return .cpu
         case .memory:
             return .memory
-        case .gpu:
-            return .gpu
+        case .temperature:
+            return .temperature
         case .battery:
             return .battery
         }
@@ -256,11 +255,11 @@ final class StatusBarController: NSObject {
             return StatusBarStripSegment(kind: .metric(title: "MEM", value: formatPercent(services.metricsStore.latestValue(.memoryUsedPercent), fallback: "0%")))
         case .cpu:
             return StatusBarStripSegment(kind: .metric(title: "CPU", value: formatPercent(services.metricsStore.latestValue(.cpuUsage), fallback: "0%")))
-        case .gpu:
-            if services.metricsStore.isGPUSupported {
-                return StatusBarStripSegment(kind: .metric(title: "GPU", value: formatPercent(services.metricsStore.latestValue(.gpuUsage), fallback: "0%")))
+        case .temperature:
+            if services.metricsStore.isCPUTemperatureSupported {
+                return StatusBarStripSegment(kind: .metric(title: "TEMP", value: formatTemperature(services.metricsStore.latestValue(.cpuTemperature), fallback: "--")))
             }
-            return StatusBarStripSegment(kind: .metric(title: "GPU", value: "--"))
+            return StatusBarStripSegment(kind: .metric(title: "TEMP", value: "--"))
         case .battery:
             return StatusBarStripSegment(kind: .metric(title: "BAT", value: formatPercent(services.metricsStore.latestValue(.batteryPercent), fallback: "0%")))
         }
@@ -269,6 +268,11 @@ final class StatusBarController: NSObject {
     private func formatPercent(_ value: Double?, fallback: String = "--") -> String {
         guard let value else { return fallback }
         return String(format: "%.0f%%", value)
+    }
+
+    private func formatTemperature(_ value: Double?, fallback: String = "--") -> String {
+        guard let value else { return fallback }
+        return String(format: "%.0f°", value)
     }
 
     private func formatRate(_ value: Double?, fallback: String = "--") -> String {

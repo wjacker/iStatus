@@ -7,10 +7,14 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     case memory = "Memory"
     case disk = "Disk"
     case network = "Network"
-    case gpu = "GPU"
+    case temperature = "CPU Temp"
     case battery = "Battery"
 
     var id: String { rawValue }
+
+    static var visibleCases: [DashboardSection] {
+        [.overview, .cpu, .memory, .disk, .network, .battery]
+    }
 }
 
 enum TimeRange: String, CaseIterable, Identifiable {
@@ -68,7 +72,7 @@ struct DashboardView: View {
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
 
-            ForEach(DashboardSection.allCases) { section in
+            ForEach(DashboardSection.visibleCases) { section in
                 Button {
                     selectedSection = section
                 } label: {
@@ -139,7 +143,6 @@ struct DashboardView: View {
                 accent: .mint,
                 formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkTotalKBps))
             )
-            StatPill(title: "GPU", value: metricsStore.latestValue(.gpuUsage), unit: "%", accent: .orange)
             StatPill(title: "BAT", value: metricsStore.latestValue(.batteryPercent), unit: "%", accent: .green)
         }
     }
@@ -150,7 +153,6 @@ struct DashboardView: View {
             memoryCard
             diskCard
             networkCard
-            gpuCard
             batteryCard
         }
     }
@@ -168,8 +170,8 @@ struct DashboardView: View {
                 diskCard
             case .network:
                 networkCard
-            case .gpu:
-                gpuCard
+            case .temperature:
+                temperatureCard
             case .battery:
                 batteryCard
             }
@@ -291,19 +293,12 @@ struct DashboardView: View {
         }
     }
 
-    private var gpuCard: some View {
-        MetricCard(
-            title: "GPU",
-            value: metricsStore.latestValue(.gpuUsage),
-            unit: "%",
-            series: filteredSeries(.gpuUsage),
-            accent: .orange,
+    private var temperatureCard: some View {
+        CPUTemperatureCardView(
             range: selectedRange.duration,
             bucketInterval: selectedRange.bucketInterval,
-            note: metricsStore.isGPUSupported ? nil : "GPU usage not available"
-        ) {
-            EmptyView()
-        }
+            temperatureSeries: filteredSeries(.cpuTemperature)
+        )
     }
 
     private var batteryCard: some View {
@@ -347,8 +342,8 @@ private extension DashboardSection {
             return .disk
         case .network:
             return .network
-        case .gpu:
-            return .gpu
+        case .temperature:
+            return .temperature
         case .battery:
             return .battery
         }
@@ -1158,6 +1153,129 @@ struct BatteryStatRow: Identifiable {
     let value: String
 }
 
+struct CPUTemperatureCardView: View {
+    @EnvironmentObject private var metricsStore: MetricsStore
+    let range: TimeInterval
+    let bucketInterval: TimeInterval
+    let temperatureSeries: [MetricSample]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 16) {
+                TemperatureHeroRing(value: metricsStore.latestValue(.cpuTemperature))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    MiniChartView(samples: temperatureSeries, accent: .orange, range: range, bucketInterval: bucketInterval)
+                        .frame(height: 92)
+
+                    HStack(spacing: 12) {
+                        TemperatureSummaryPill(title: "CPU", value: formatTemperature(metricsStore.latestValue(.cpuTemperature)))
+                        TemperatureSummaryPill(title: "FANS", value: fanSummary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+
+            BatteryStatSection(title: "TEMPERATURE", rows: temperatureRows.isEmpty ? unsupportedRows : temperatureRows)
+            BatteryStatSection(title: "FANS", rows: fanRows.isEmpty ? unsupportedRows : fanRows)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color("CardBackground"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color("CardBorder"), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
+        )
+    }
+
+    private var temperatureRows: [BatteryStatRow] {
+        guard let detail = metricsStore.cpuTemperatureDetail else { return [] }
+        let rows = detail.sensors.prefix(8).map { stat in
+            BatteryStatRow(title: stat.name, value: formatTemperature(stat.celsius))
+        }
+        return rows.isEmpty ? [BatteryStatRow(title: "CPU", value: formatTemperature(detail.overall))] : rows
+    }
+
+    private var fanRows: [BatteryStatRow] {
+        guard let detail = metricsStore.cpuTemperatureDetail else { return [] }
+        return detail.fans.map { fan in
+            BatteryStatRow(title: fan.name, value: formatRPM(fan.rpm))
+        }
+    }
+
+    private var unsupportedRows: [BatteryStatRow] {
+        [BatteryStatRow(title: "Status", value: "Unavailable from IOKit/SMC on this Mac")]
+    }
+
+    private var fanSummary: String {
+        let count = metricsStore.cpuTemperatureDetail?.fans.count ?? 0
+        return count > 0 ? "\(count)" : "--"
+    }
+
+    private func formatTemperature(_ value: Double?) -> String {
+        guard let value else { return "--" }
+        return String(format: "%.0f°", value)
+    }
+
+    private func formatRPM(_ value: Double?) -> String {
+        guard let value else { return "--" }
+        return "\(Int(value.rounded())).formatted(.number.grouping(.automatic)) rpm"
+    }
+}
+
+private struct TemperatureHeroRing: View {
+    let value: Double?
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .strokeBorder(Color.white.opacity(0.18), lineWidth: 12)
+            Circle()
+                .trim(from: 0, to: CGFloat(min(max((value ?? 0) / 100, 0), 1)))
+                .stroke(
+                    AngularGradient(colors: [.blue, .cyan, .blue], center: .center),
+                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+
+            VStack(spacing: 2) {
+                Text(value.map { String(format: "%.0f°", $0) } ?? "--")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("CPU TEMP")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+            .padding(12)
+        }
+        .frame(width: 122, height: 122)
+    }
+}
+
+private struct TemperatureSummaryPill: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.65))
+            Text(value)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(12)
+    }
+}
+
 struct BatteryRingPanel: View {
     let percent: Double?
     let healthPercent: Double?
@@ -1637,19 +1755,12 @@ struct StatusItemDetailPopoverView: View {
             )
         case .network:
             networkPopupCard
-        case .gpu:
-            MetricCard(
-                title: "GPU",
-                value: metricsStore.latestValue(.gpuUsage),
-                unit: "%",
-                series: filteredSeries(.gpuUsage),
-                accent: .orange,
+        case .temperature:
+            CPUTemperatureCardView(
                 range: selectedRange.duration,
                 bucketInterval: selectedRange.bucketInterval,
-                note: metricsStore.isGPUSupported ? nil : "GPU usage not available"
-            ) {
-                EmptyView()
-            }
+                temperatureSeries: filteredSeries(.cpuTemperature)
+            )
         case .battery:
             BatteryCardView(
                 range: selectedRange.duration,
