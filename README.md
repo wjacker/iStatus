@@ -1,3 +1,7 @@
+## Language / 语言
+
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 # iStatus
 
 iStatus is a native macOS menu bar system monitor built with SwiftUI and AppKit. It is designed for people who want fast, glanceable system telemetry in the menu bar, plus a richer dashboard for deeper inspection when needed.
