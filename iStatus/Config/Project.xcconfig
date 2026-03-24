@@ -1,3 +1,4 @@
 #include? "Project.local.xcconfig"
 
 ISTATUS_BUNDLE_IDENTIFIER = com.jack.istatus
+ISTATUS_DEVELOPMENT_TEAM =
