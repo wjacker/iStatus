@@ -57,7 +57,7 @@ actor SignificantEnergyMetricsWorker {
 
 @MainActor
 final class MetricsStore: ObservableObject {
-    private let retention: TimeInterval = 24 * 60 * 60
+    private let retention: TimeInterval = 7 * 24 * 60 * 60
     private let sampleInterval: TimeInterval = 2
 
     private let cpuSampler = CPUSampler()
@@ -105,7 +105,6 @@ final class MetricsStore: ObservableObject {
         MetricType.allCases.forEach { type in
             seriesByType[type] = RollingSeries(retention: retention)
         }
-        clearPersistedSamples()
         loadPersistedSamples()
         start()
     }
@@ -428,6 +427,7 @@ final class MetricsStore: ObservableObject {
             let data = try Data(contentsOf: persistenceURL())
             let store = try JSONDecoder().decode(PersistedStore.self, from: data)
             let cutoff = Date().addingTimeInterval(-retention)
+            var restoredLatestTimestamp: Date?
 
             for (key, samples) in store.samplesByType {
                 guard let type = MetricType(rawValue: key) else { continue }
@@ -439,8 +439,15 @@ final class MetricsStore: ObservableObject {
                         let sample = MetricSample(timestamp: persisted.timestamp, value: persisted.value)
                         series.append(sample)
                         latest[type] = sample
+                        if restoredLatestTimestamp == nil || sample.timestamp > restoredLatestTimestamp! {
+                            restoredLatestTimestamp = sample.timestamp
+                        }
                     }
                 seriesByType[type] = series
+            }
+
+            if let restoredLatestTimestamp {
+                sampleTick = restoredLatestTimestamp
             }
         } catch {
             // no persisted data yet
