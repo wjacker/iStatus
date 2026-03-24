@@ -2,4 +2,4 @@
 .deriveddata/
 xcuserdata/
 *.xcuserstate
-Config/Project.local.xcconfig
+iStatus/Config/Project.local.xcconfig
