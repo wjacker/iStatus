@@ -327,7 +327,8 @@ struct DualBarChartView: View {
                 }
             }
             .frame(width: bar.width)
-            .overlay(tooltip, alignment: .center)
+            .overlay(tooltip, alignment: .top)
+            .zIndex(isHovering ? 20 : 0)
         }
 
         private var tooltip: some View {
@@ -355,9 +356,8 @@ struct DualBarChartView: View {
                     .background(Color.black.opacity(0.7))
                     .cornerRadius(8)
                     .fixedSize()
-                    .offset(y: -18)
+                    .offset(y: -6)
                     .allowsHitTesting(false)
-                    .zIndex(2)
                 }
             }
         }
@@ -369,12 +369,25 @@ struct DualBarChartView: View {
         }()
 
         private func formatRate(_ value: Double) -> String {
-            if value >= 1024 {
-                return String(format: "%.1f MB/s", value / 1024)
-            }
-            return String(format: "%.0f KB/s", value)
+            formatNetworkRate(kilobytesPerSecond: value)
         }
     }
 }
 
 private let midGap: CGFloat = 3
+
+private func formatNetworkRate(kilobytesPerSecond value: Double?, fallback: String = "--") -> String {
+    guard let value else { return fallback }
+    return formatNetworkRate(bytesPerSecond: value * 1024, fallback: fallback)
+}
+
+private func formatNetworkRate(bytesPerSecond value: Double?, fallback: String = "--") -> String {
+    guard let value else { return fallback }
+    let formatter = ByteCountFormatter()
+    formatter.allowedUnits = [.useBytes, .useKB, .useMB, .useGB]
+    formatter.countStyle = .binary
+    formatter.includesUnit = true
+    formatter.isAdaptive = true
+    formatter.zeroPadsFractionDigits = false
+    return formatter.string(fromByteCount: Int64(value)) + "/s"
+}

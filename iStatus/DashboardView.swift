@@ -127,7 +127,13 @@ struct DashboardView: View {
         HStack(spacing: 12) {
             StatPill(title: "CPU", value: metricsStore.latestValue(.cpuUsage), unit: "%", accent: .pink)
             StatPill(title: "MEM", value: metricsStore.latestValue(.memoryUsedPercent), unit: "%", accent: .cyan)
-            StatPill(title: "NET", value: metricsStore.latestValue(.networkTotalKBps), unit: "KB/s", accent: .mint)
+            StatPill(
+                title: "NET",
+                value: metricsStore.latestValue(.networkTotalKBps),
+                unit: "KB/s",
+                accent: .mint,
+                formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkTotalKBps))
+            )
             StatPill(title: "GPU", value: metricsStore.latestValue(.gpuUsage), unit: "%", accent: .orange)
             StatPill(title: "BAT", value: metricsStore.latestValue(.batteryPercent), unit: "%", accent: .green)
         }
@@ -224,6 +230,7 @@ struct DashboardView: View {
             title: "Network",
             value: metricsStore.latestValue(.networkTotalKBps),
             unit: "KB/s",
+            formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkTotalKBps)),
             series: filteredSeries(.networkTotalKBps),
             accent: .mint,
             range: selectedRange.duration,
@@ -243,6 +250,7 @@ struct DashboardView: View {
                 title: "Down",
                 value: metricsStore.latestValue(.networkDownKBps),
                 unit: "KB/s",
+                formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkDownKBps)),
                 series: filteredSeries(.networkDownKBps),
                 accent: .mint,
                 range: selectedRange.duration,
@@ -252,6 +260,7 @@ struct DashboardView: View {
                 title: "Up",
                 value: metricsStore.latestValue(.networkUpKBps),
                 unit: "KB/s",
+                formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkUpKBps)),
                 series: filteredSeries(.networkUpKBps),
                 accent: .mint,
                 range: selectedRange.duration,
@@ -325,6 +334,7 @@ struct StatPill: View {
     let value: Double?
     let unit: String
     let accent: Color
+    var formattedValueOverride: String? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -351,6 +361,9 @@ struct StatPill: View {
     }
 
     private var formattedValue: String {
+        if let formattedValueOverride {
+            return formattedValueOverride
+        }
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, unit)
     }
@@ -386,6 +399,7 @@ struct MetricCard<Footer: View>: View {
     let title: String
     let value: Double?
     let unit: String
+    var formattedValueOverride: String? = nil
     let series: [MetricSample]
     let accent: Color
     let range: TimeInterval
@@ -429,6 +443,9 @@ struct MetricCard<Footer: View>: View {
     }
 
     private var formattedValue: String {
+        if let formattedValueOverride {
+            return formattedValueOverride
+        }
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, unit)
     }
@@ -438,6 +455,7 @@ struct SubMetricChartRow: View {
     let title: String
     let value: Double?
     let unit: String
+    var formattedValueOverride: String? = nil
     let series: [MetricSample]
     let accent: Color
     let range: TimeInterval
@@ -453,6 +471,7 @@ struct SubMetricChartRow: View {
                     .font(.system(.callout, design: .rounded))
                     .foregroundStyle(.white)
             }
+            .frame(width: 56, alignment: .leading)
             MiniChartView(samples: series, accent: accent, range: range, bucketInterval: bucketInterval)
                 .frame(height: 36)
         }
@@ -462,6 +481,9 @@ struct SubMetricChartRow: View {
     }
 
     private var formattedValue: String {
+        if let formattedValueOverride {
+            return formattedValueOverride
+        }
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, unit)
     }
@@ -525,7 +547,7 @@ struct ProcessRow: View {
     }
 
     private func format(_ value: Double) -> String {
-        return String(format: "%.0fKB/s", value)
+        formatNetworkRate(kilobytesPerSecond: value)
     }
 }
 
@@ -836,8 +858,10 @@ struct DiskRateMetric: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(formatRate(value))
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             HStack(spacing: 8) {
                 Circle()
                     .fill(color)
@@ -851,8 +875,7 @@ struct DiskRateMetric: View {
     }
 
     private func formatRate(_ value: Double?) -> String {
-        guard let value else { return "--" }
-        return ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .binary) + "/s"
+        formatNetworkRate(bytesPerSecond: value)
     }
 }
 
@@ -1630,54 +1653,62 @@ struct StatusItemDetailPopoverView: View {
     private var footer: some View {
         HStack(spacing: 10) {
             ForEach(footerIcons) { app in
-                AppIconView(pid: app.pid, fallbackName: app.name, bundlePath: app.bundlePath)
-                    .frame(width: 22, height: 22)
+                Button {
+                    openFooterApp(app)
+                } label: {
+                    AppIconView(pid: app.pid, fallbackName: app.name, bundlePath: app.bundlePath)
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
             }
-
-            Spacer()
-
-            Button {
-                onOpenDashboard()
-            } label: {
-                Label("Open Dashboard", systemImage: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.white)
         }
         .padding(.horizontal, 4)
         .padding(.top, 2)
     }
 
     private var footerIcons: [StatusPopupAppIcon] {
-        switch section {
-        case .network:
-            return metricsStore.networkProcesses.prefix(5).map { StatusPopupAppIcon(pid: $0.pid, name: $0.name, bundlePath: $0.bundlePath) }
-        case .disk:
-            return metricsStore.diskProcesses.prefix(5).map { StatusPopupAppIcon(pid: $0.pid, name: $0.name, bundlePath: $0.bundlePath) }
-        case .memory:
-            return metricsStore.memoryProcesses.prefix(5).map { StatusPopupAppIcon(pid: $0.pid, name: $0.name, bundlePath: $0.bundlePath) }
-        case .battery:
-            if let app = metricsStore.significantEnergyApp {
-                return [StatusPopupAppIcon(pid: app.pid, name: app.name, bundlePath: app.bundlePath)]
-            }
-            return runningAppFallbackIcons
-        case .cpu, .gpu, .overview:
-            return runningAppFallbackIcons
-        }
+        [
+            StatusPopupAppIcon(pid: nil, name: "Activity Monitor", bundlePath: preferredAppPath(named: "Activity Monitor")),
+            StatusPopupAppIcon(pid: nil, name: "Console", bundlePath: preferredAppPath(named: "Console")),
+            preferredTerminalAppIcon,
+            StatusPopupAppIcon(pid: nil, name: "System Information", bundlePath: preferredAppPath(named: "System Information")),
+            StatusPopupAppIcon(pid: nil, name: "iStatus", bundlePath: Bundle.main.bundlePath)
+        ]
     }
 
-    private var runningAppFallbackIcons: [StatusPopupAppIcon] {
-        NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular }
-            .prefix(5)
-            .map {
-                StatusPopupAppIcon(
-                    pid: Int($0.processIdentifier),
-                    name: $0.localizedName ?? "App",
-                    bundlePath: $0.bundleURL?.path
-                )
-            }
+    private var preferredTerminalAppIcon: StatusPopupAppIcon {
+        if let iTermPath = preferredAppPath(named: "iTerm") {
+            return StatusPopupAppIcon(pid: nil, name: "iTerm", bundlePath: iTermPath)
+        }
+
+        return StatusPopupAppIcon(pid: nil, name: "Terminal", bundlePath: preferredAppPath(named: "Terminal"))
+    }
+
+    private func preferredAppPath(named appName: String) -> String? {
+        let candidatePaths = [
+            "/Applications/\(appName).app",
+            "/Applications/Utilities/\(appName).app",
+            "/System/Applications/\(appName).app",
+            "/System/Applications/Utilities/\(appName).app"
+        ]
+
+        if let existingPath = candidatePaths.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+            return existingPath
+        }
+
+        return NSWorkspace.shared.runningApplications.first(where: { app in
+            app.localizedName == appName
+        })?.bundleURL?.path
+    }
+
+    private func openFooterApp(_ app: StatusPopupAppIcon) {
+        if app.name == "iStatus" {
+            onOpenDashboard()
+            return
+        }
+
+        guard let bundlePath = app.bundlePath else { return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: bundlePath))
     }
 
     private var popupWidth: CGFloat {
@@ -1703,7 +1734,7 @@ struct StatusItemDetailPopoverView: View {
 
     private func peakLabel(for series: [MetricSample]) -> String {
         let maxValue = series.map(\.value).max() ?? 0
-        return ByteCountFormatter.string(fromByteCount: Int64(maxValue * 1024), countStyle: .binary) + "/s"
+        return formatNetworkRate(kilobytesPerSecond: maxValue)
     }
 
     private func filteredSeries(_ type: MetricType) -> [MetricSample] {
@@ -1711,4 +1742,20 @@ struct StatusItemDetailPopoverView: View {
         let cutoff = Date().addingTimeInterval(-selectedRange.duration)
         return metricsStore.series(type).filter { $0.timestamp >= cutoff }
     }
+}
+
+private func formatNetworkRate(kilobytesPerSecond value: Double?, fallback: String = "--") -> String {
+    guard let value else { return fallback }
+    return formatNetworkRate(bytesPerSecond: value * 1024, fallback: fallback)
+}
+
+private func formatNetworkRate(bytesPerSecond value: Double?, fallback: String = "--") -> String {
+    guard let value else { return fallback }
+    let formatter = ByteCountFormatter()
+    formatter.allowedUnits = [.useBytes, .useKB, .useMB, .useGB]
+    formatter.countStyle = .binary
+    formatter.includesUnit = true
+    formatter.isAdaptive = true
+    formatter.zeroPadsFractionDigits = false
+    return formatter.string(fromByteCount: Int64(value)) + "/s"
 }
