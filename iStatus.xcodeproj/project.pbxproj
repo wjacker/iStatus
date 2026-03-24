@@ -27,6 +27,7 @@
 
 /* Begin PBXFileReference section */
 		A1B2C3D4E5F6012345678914 /* iStatus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = iStatus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F6012345678950 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678930 /* iStatusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iStatusApp.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678932 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678933 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
@@ -60,6 +61,7 @@
 		A1B2C3D4E5F6012345678902 /* iStatus */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F6012345678951 /* Config */,
 				A1B2C3D4E5F6012345678930 /* iStatusApp.swift */,
 				A1B2C3D4E5F6012345678932 /* MenuBarView.swift */,
 				A1B2C3D4E5F6012345678933 /* DashboardView.swift */,
@@ -79,6 +81,14 @@
 				A1B2C3D4E5F6012345678914 /* iStatus.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678951 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678950 /* Project.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		A1B2C3D4E5F6012345678947 /* Metrics */ = {
@@ -227,6 +237,7 @@
 		};
 		A1B2C3D4E5F6012345678912 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D4E5F6012345678950 /* Project.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -241,7 +252,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yiban.jack.istatus;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ISTATUS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = iStatus;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -250,6 +261,7 @@
 		};
 		A1B2C3D4E5F6012345678913 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D4E5F6012345678950 /* Project.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -264,7 +276,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yiban.jack.istatus;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ISTATUS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = iStatus;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
