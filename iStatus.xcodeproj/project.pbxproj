@@ -20,9 +20,9 @@
 		A1B2C3D4E5F601234567892B /* DiskSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678941 /* DiskSampler.swift */; };
 		A1B2C3D4E5F601234567892C /* NetworkSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678942 /* NetworkSampler.swift */; };
 		A1B2C3D4E5F601234567892D /* BatterySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678943 /* BatterySampler.swift */; };
-		A1B2C3D4E5F601234567892E /* GPUSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678944 /* GPUSampler.swift */; };
 		A1B2C3D4E5F601234567892F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678945 /* Assets.xcassets */; };
 		A1B2C3D4E5F601234567893A /* MemoryStackChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601234567893B /* MemoryStackChartView.swift */; };
+		A1B2C3D4E5F6012345678952 /* CPUTemperatureSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678953 /* CPUTemperatureSampler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,10 +41,10 @@
 		A1B2C3D4E5F6012345678941 /* DiskSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSampler.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678942 /* NetworkSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSampler.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678943 /* BatterySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatterySampler.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6012345678944 /* GPUSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUSampler.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678945 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678946 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678950 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678953 /* CPUTemperatureSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUTemperatureSampler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,7 +111,7 @@
 				A1B2C3D4E5F6012345678941 /* DiskSampler.swift */,
 				A1B2C3D4E5F6012345678942 /* NetworkSampler.swift */,
 				A1B2C3D4E5F6012345678943 /* BatterySampler.swift */,
-				A1B2C3D4E5F6012345678944 /* GPUSampler.swift */,
+				A1B2C3D4E5F6012345678953 /* CPUTemperatureSampler.swift */,
 			);
 			path = Samplers;
 			sourceTree = "<group>";
@@ -206,7 +206,7 @@
 				A1B2C3D4E5F601234567892B /* DiskSampler.swift in Sources */,
 				A1B2C3D4E5F601234567892C /* NetworkSampler.swift in Sources */,
 				A1B2C3D4E5F601234567892D /* BatterySampler.swift in Sources */,
-				A1B2C3D4E5F601234567892E /* GPUSampler.swift in Sources */,
+				A1B2C3D4E5F6012345678952 /* CPUTemperatureSampler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

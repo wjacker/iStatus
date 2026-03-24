@@ -10,6 +10,7 @@ enum MetricType: String, CaseIterable, Hashable, Sendable {
     case cpuUsage
     case cpuUser
     case cpuSystem
+    case cpuTemperature
     case memoryUsedPercent
     case memoryFreePercent
     case memoryAppBytes
@@ -22,7 +23,6 @@ enum MetricType: String, CaseIterable, Hashable, Sendable {
     case networkTotalKBps
     case networkDownKBps
     case networkUpKBps
-    case gpuUsage
     case batteryPercent
 }
 
@@ -31,6 +31,24 @@ struct CPUDetail: Sendable {
     let user: Double
     let system: Double
     let perCore: [Double]
+}
+
+struct CPUTemperatureSensorStat: Identifiable, Sendable {
+    let id = UUID()
+    let name: String
+    let celsius: Double
+}
+
+struct CPUFanStat: Identifiable, Sendable {
+    let id = UUID()
+    let name: String
+    let rpm: Double
+}
+
+struct CPUTemperatureDetail: Sendable {
+    let overall: Double
+    let sensors: [CPUTemperatureSensorStat]
+    let fans: [CPUFanStat]
 }
 
 struct MemoryDetail: Sendable {

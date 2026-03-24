@@ -64,7 +64,7 @@ final class MetricsStore: ObservableObject {
     private let memorySampler = MemorySampler()
     private let diskSampler = DiskSampler()
     private let networkSampler = NetworkSampler()
-    private let gpuSampler = GPUSampler()
+    private let cpuTemperatureSampler = CPUTemperatureSampler()
     private let batterySampler = BatterySampler()
     private let diskProcessWorker = DiskProcessMetricsWorker()
     private let networkProcessWorker = NetworkProcessMetricsWorker()
@@ -79,6 +79,7 @@ final class MetricsStore: ObservableObject {
 
     @Published private(set) var latest: [MetricType: MetricSample] = [:]
     @Published private(set) var cpuDetail: CPUDetail?
+    @Published private(set) var cpuTemperatureDetail: CPUTemperatureDetail?
     @Published private(set) var memoryDetail: MemoryDetail?
     @Published private(set) var diskVolumes: [DiskVolumeStat] = []
     @Published private(set) var diskDetail: DiskDetail?
@@ -91,7 +92,7 @@ final class MetricsStore: ObservableObject {
     @Published private(set) var memoryProcesses: [ProcessMemStat] = []
     @Published private(set) var sampleTick: Date = .distantPast
 
-    var isGPUSupported: Bool { gpuSampler.isSupported }
+    var isCPUTemperatureSupported: Bool { cpuTemperatureSampler.isSupported || cpuTemperatureDetail != nil }
 
     private var lastPublicIPFetch: Date?
     private var lastLocalIPFetch: Date?
@@ -219,8 +220,9 @@ final class MetricsStore: ObservableObject {
         updateLocalIPsIfNeeded(now: timestamp)
         updatePublicIPsIfNeeded(now: timestamp)
 
-        if let gpu = gpuSampler.sample() {
-            append(.gpuUsage, value: gpu, timestamp: timestamp)
+        if let temperatureDetail = cpuTemperatureSampler.sampleDetailed() {
+            cpuTemperatureDetail = temperatureDetail
+            append(.cpuTemperature, value: temperatureDetail.overall, timestamp: timestamp)
         }
 
         if let detail = batterySampler.sampleDetailed() {
@@ -234,7 +236,7 @@ final class MetricsStore: ObservableObject {
 
         if sampleCount <= 5 || sampleCount % 10 == 0 {
             debugLog(
-                "sample #\(sampleCount) cpu=\(formatDebug(latestValue(.cpuUsage))) mem=\(formatDebug(latestValue(.memoryUsedPercent))) net=\(formatDebug(latestValue(.networkTotalKBps)))"
+                "sample #\(sampleCount) cpu=\(formatDebug(latestValue(.cpuUsage))) mem=\(formatDebug(latestValue(.memoryUsedPercent))) net=\(formatDebug(latestValue(.networkTotalKBps))) temp=\(formatDebug(latestValue(.cpuTemperature))) fans=\(cpuTemperatureDetail?.fans.count ?? 0)"
             )
         }
 
