@@ -514,9 +514,11 @@ struct ProcessHeaderRow: View {
     var body: some View {
         HStack {
             Text("Process")
-            Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
             Text("Down")
+                .frame(width: processRateColumnWidth, alignment: .trailing)
             Text("Up")
+                .frame(width: processRateColumnWidth, alignment: .trailing)
         }
         .font(.caption2)
         .foregroundStyle(.white.opacity(0.7))
@@ -531,9 +533,11 @@ struct ProcessRow: View {
             AppIconView(pid: stat.pid, fallbackName: stat.name, bundlePath: stat.bundlePath)
             Text(appDisplayName)
                 .lineLimit(1)
-            Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
             Text(format(stat.downKBps))
+                .frame(width: processRateColumnWidth, alignment: .trailing)
             Text(format(stat.upKBps))
+                .frame(width: processRateColumnWidth, alignment: .trailing)
         }
         .font(.system(.callout, design: .rounded))
         .foregroundStyle(.white)
@@ -550,6 +554,8 @@ struct ProcessRow: View {
         formatNetworkRate(kilobytesPerSecond: value)
     }
 }
+
+private let processRateColumnWidth: CGFloat = 84
 
 struct ProcessMemoryRow: View {
     let stat: ProcessMemStat
