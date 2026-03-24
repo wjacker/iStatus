@@ -281,13 +281,14 @@ final class StatusBarController: NSObject {
 }
 
 @MainActor
-final class AppWindowController {
+final class AppWindowController: NSObject, NSWindowDelegate {
     private let services: AppServices
     private var dashboardWindow: NSWindow?
     private var settingsWindow: NSWindow?
 
     init(services: AppServices) {
         self.services = services
+        super.init()
     }
 
     func showDashboard() {
@@ -308,6 +309,7 @@ final class AppWindowController {
             window.minSize = NSSize(width: 1040, height: 760)
             window.center()
             window.contentViewController = controller
+            window.delegate = self
             dashboardWindow = window
         }
 
@@ -331,6 +333,7 @@ final class AppWindowController {
             window.isReleasedWhenClosed = false
             window.center()
             window.contentViewController = controller
+            window.delegate = self
             settingsWindow = window
         }
 
@@ -340,10 +343,26 @@ final class AppWindowController {
     private func presentWindow(_ window: NSWindow?) {
         guard let window else { return }
         DispatchQueue.main.async {
+            NSApp.setActivationPolicy(.regular)
             window.orderFrontRegardless()
             window.makeKey()
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateActivationPolicy()
+        }
+    }
+
+    private func updateActivationPolicy() {
+        let hasVisibleWindows = [dashboardWindow, settingsWindow].contains { window in
+            guard let window else { return false }
+            return window.isVisible
+        }
+
+        NSApp.setActivationPolicy(hasVisibleWindows ? .regular : .accessory)
     }
 }
 

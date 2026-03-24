@@ -591,15 +591,33 @@ struct AppIconView: View {
     var body: some View {
         Image(nsImage: icon)
             .resizable()
+            .renderingMode(.original)
             .frame(width: 16, height: 16)
             .cornerRadius(3)
     }
 
     private var icon: NSImage {
         if let bundlePath {
-            return NSWorkspace.shared.icon(forFile: bundlePath)
+            if bundlePath == Bundle.main.bundlePath {
+                if let brandedIcon = NSImage(named: "iStatusBrand") {
+                    brandedIcon.isTemplate = false
+                    return brandedIcon
+                }
+                if let currentIcon = NSRunningApplication.current.icon {
+                    currentIcon.isTemplate = false
+                    return currentIcon
+                }
+                if let appIcon = NSApp.applicationIconImage {
+                    appIcon.isTemplate = false
+                    return appIcon
+                }
+            }
+            let workspaceIcon = NSWorkspace.shared.icon(forFile: bundlePath)
+            workspaceIcon.isTemplate = false
+            return workspaceIcon
         }
         if let pid, let app = NSRunningApplication(processIdentifier: pid_t(pid)), let appIcon = app.icon {
+            appIcon.isTemplate = false
             return appIcon
         }
         if let app = NSWorkspace.shared.runningApplications.first(where: { app in
@@ -611,9 +629,12 @@ struct AppIconView: View {
             }
             return false
         }), let appIcon = app.icon {
+            appIcon.isTemplate = false
             return appIcon
         }
-        return NSWorkspace.shared.icon(forFileType: "app")
+        let fallbackIcon = NSWorkspace.shared.icon(forFileType: "app")
+        fallbackIcon.isTemplate = false
+        return fallbackIcon
     }
 }
 

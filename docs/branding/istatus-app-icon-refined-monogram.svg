@@ -32,22 +32,11 @@
       <stop stop-color="#89E5FF" stop-opacity="0.32"/>
       <stop offset="1" stop-color="#4F8FFF" stop-opacity="0.2"/>
     </linearGradient>
-    <filter id="shadowOuter" x="92" y="92" width="840" height="856" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="28" stdDeviation="38" flood-color="#020617" flood-opacity="0.28"/>
-    </filter>
-    <filter id="shadowInner" x="204" y="204" width="616" height="616" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#06101E" flood-opacity="0.3"/>
-    </filter>
   </defs>
 
-  <g filter="url(#shadowOuter)">
-    <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#outerBg)"/>
-    <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#topGlow)"/>
-  </g>
-
-  <g filter="url(#shadowInner)">
-    <rect x="212" y="212" width="600" height="600" rx="156" fill="url(#innerPanel)"/>
-  </g>
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#outerBg)"/>
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#topGlow)"/>
+  <rect x="132" y="132" width="760" height="760" rx="164" fill="url(#innerPanel)"/>
 
   <circle cx="512" cy="512" r="300" fill="url(#ringGlow)"/>
 
