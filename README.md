@@ -189,4 +189,4 @@ Potential next steps:
 
 ## License
 
-No license file is currently included. Add one before publishing the project for external reuse.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
