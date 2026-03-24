@@ -111,9 +111,14 @@ struct DashboardView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(selectedSection.rawValue)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                HStack(spacing: 10) {
+                    if let menuBarItem = selectedSection.menuBarItem {
+                        MenuBarVisibilityButton(item: menuBarItem, style: .header)
+                    }
+                    Text(selectedSection.rawValue)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
                 Text("Rolling history with 2s sampling")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.7))
@@ -329,6 +334,27 @@ struct DashboardView: View {
     }
 }
 
+private extension DashboardSection {
+    var menuBarItem: MenuBarMetricItem? {
+        switch self {
+        case .overview:
+            return nil
+        case .cpu:
+            return .cpu
+        case .memory:
+            return .memory
+        case .disk:
+            return .disk
+        case .network:
+            return .network
+        case .gpu:
+            return .gpu
+        case .battery:
+            return .battery
+        }
+    }
+}
+
 struct StatPill: View {
     let title: String
     let value: Double?
@@ -448,6 +474,32 @@ struct MetricCard<Footer: View>: View {
         }
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, unit)
+    }
+}
+
+struct MenuBarVisibilityButton: View {
+    @EnvironmentObject private var menuBarSettings: MenuBarSettingsStore
+    let item: MenuBarMetricItem
+    var style: Style = .header
+
+    enum Style {
+        case header
+    }
+
+    var body: some View {
+        Toggle(isOn: isOnBinding) {
+            EmptyView()
+        }
+        .labelsHidden()
+        .toggleStyle(.checkbox)
+        .help(menuBarSettings.isEnabled(item) ? "Hide from menu bar" : "Show in menu bar")
+    }
+
+    private var isOnBinding: Binding<Bool> {
+        Binding(
+            get: { menuBarSettings.isEnabled(item) },
+            set: { menuBarSettings.setEnabled($0, for: item) }
+        )
     }
 }
 
@@ -958,42 +1010,44 @@ struct BatteryCardView: View {
     let batterySeries: [MetricSample]
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(spacing: 14) {
-                BatteryStatSection(title: "POWER ADAPTER", rows: powerAdapterRows)
-                BatteryStatSection(title: "BATTERY", rows: batteryRows)
-                BatteryStatSection(title: "HEALTH", rows: healthRows)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(spacing: 14) {
+                    BatteryStatSection(title: "POWER ADAPTER", rows: powerAdapterRows)
+                    BatteryStatSection(title: "BATTERY", rows: batteryRows)
+                    BatteryStatSection(title: "HEALTH", rows: healthRows)
 
-                if let detail = metricsStore.batteryDetail, !detail.cellVoltages.isEmpty {
-                    BatteryStatSection(
-                        title: "CELLS",
-                        rows: detail.cellVoltages.enumerated().map { index, voltage in
-                            BatteryStatRow(title: "Cell \(index + 1)", value: formatVoltage(voltage))
-                        }
-                    )
+                    if let detail = metricsStore.batteryDetail, !detail.cellVoltages.isEmpty {
+                        BatteryStatSection(
+                            title: "CELLS",
+                            rows: detail.cellVoltages.enumerated().map { index, voltage in
+                                BatteryStatRow(title: "Cell \(index + 1)", value: formatVoltage(voltage))
+                            }
+                        )
+                    }
                 }
+                .frame(maxWidth: 320, alignment: .top)
+
+                VStack(spacing: 14) {
+                    BatteryRingPanel(
+                        percent: metricsStore.batteryDetail?.percent,
+                        healthPercent: metricsStore.batteryDetail?.healthPercent
+                    )
+
+                    BatteryLevelPanel(
+                        samples: batterySeries,
+                        isCharging: metricsStore.batteryDetail?.isCharging ?? false,
+                        isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
+                        range: range,
+                        bucketInterval: bucketInterval
+                    )
+
+                    BatteryModeRow(mode: batteryModeText)
+
+                    BatterySignificantEnergyRow(app: metricsStore.significantEnergyApp)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: 320, alignment: .top)
-
-            VStack(spacing: 14) {
-                BatteryRingPanel(
-                    percent: metricsStore.batteryDetail?.percent,
-                    healthPercent: metricsStore.batteryDetail?.healthPercent
-                )
-
-                BatteryLevelPanel(
-                    samples: batterySeries,
-                    isCharging: metricsStore.batteryDetail?.isCharging ?? false,
-                    isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
-                    range: range,
-                    bucketInterval: bucketInterval
-                )
-
-                BatteryModeRow(mode: batteryModeText)
-
-                BatterySignificantEnergyRow(app: metricsStore.significantEnergyApp)
-            }
-            .frame(maxWidth: .infinity)
         }
         .padding(16)
         .background(

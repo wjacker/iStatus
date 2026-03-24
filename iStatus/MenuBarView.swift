@@ -76,8 +76,14 @@ final class MenuBarSettingsStore: ObservableObject {
     }
 
     func setEnabled(_ enabled: Bool, for item: MenuBarMetricItem) {
-        enabledItems[item] = enabled
+        var updated = enabledItems
+        updated[item] = enabled
+        enabledItems = updated
         UserDefaults.standard.set(enabled, forKey: item.storageKey)
+    }
+
+    var enabledItemsPublisher: Published<[MenuBarMetricItem: Bool]>.Publisher {
+        $enabledItems
     }
 
     var activeItems: [MenuBarMetricItem] {

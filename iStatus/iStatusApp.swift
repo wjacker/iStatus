@@ -44,40 +44,49 @@ final class StatusBarController: NSObject {
     init(services: AppServices) {
         self.services = services
         super.init()
-        syncStatusItems()
+        syncStatusItems(activeItems: Set(services.menuBarSettings.activeItems))
         refreshStatusItems()
         observeSettings()
     }
 
     private func observeSettings() {
-        services.menuBarSettings.objectWillChange
-            .merge(with: services.metricsStore.objectWillChange)
+        services.menuBarSettings.enabledItemsPublisher
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabledItems in
+                let activeItems = Set(
+                    MenuBarMetricItem.allCases.filter { enabledItems[$0] ?? $0.defaultEnabled }
+                )
+                self?.syncStatusItems(activeItems: activeItems)
+                self?.refreshStatusItems()
+            }
+            .store(in: &cancellables)
+
+        services.metricsStore.objectWillChange
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.syncStatusItems()
                 self?.refreshStatusItems()
             }
             .store(in: &cancellables)
     }
 
-    private func syncStatusItems() {
-        let activeItems = Set(services.menuBarSettings.activeItems)
+    private func syncStatusItems(activeItems: Set<MenuBarMetricItem>) {
+        for item in MenuBarMetricItem.allCases {
+            let statusItem: NSStatusItem
+            if let existing = statusItems[item] {
+                statusItem = existing
+            } else {
+                let created = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+                configureStatusItem(created, for: item)
+                statusItems[item] = created
+                statusItem = created
+            }
 
-        for item in MenuBarMetricItem.allCases where activeItems.contains(item) && statusItems[item] == nil {
-            let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-            configureStatusItem(statusItem, for: item)
-            statusItems[item] = statusItem
-        }
+            let isActive = activeItems.contains(item)
+            statusItem.isVisible = isActive
 
-        for item in MenuBarMetricItem.allCases where !activeItems.contains(item) {
-            guard let statusItem = statusItems.removeValue(forKey: item) else { continue }
-            if activePanelItem == item {
+            if !isActive, activePanelItem == item {
                 closePanel()
             }
-            if let button = statusItem.button {
-                buttonToItem.removeValue(forKey: ObjectIdentifier(button))
-            }
-            NSStatusBar.system.removeStatusItem(statusItem)
         }
     }
 
@@ -140,7 +149,6 @@ final class StatusBarController: NSObject {
         panel.setContentSize(host.view.fittingSize)
         position(panel: panel, below: button)
         panel.orderFrontRegardless()
-        NSApp.activate(ignoringOtherApps: false)
 
         self.panel = panel
         self.activePanelItem = item
