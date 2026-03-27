@@ -12,7 +12,7 @@ enum MenuBarMetricItem: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static var visibleCases: [MenuBarMetricItem] {
-        [.network, .disk, .cpu, .memory, .battery]
+        [.network, .disk, .cpu, .memory, .temperature, .battery]
     }
 
     var title: String {

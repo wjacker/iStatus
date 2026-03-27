@@ -220,9 +220,11 @@ final class MetricsStore: ObservableObject {
         updateLocalIPsIfNeeded(now: timestamp)
         updatePublicIPsIfNeeded(now: timestamp)
 
-        if let temperatureDetail = cpuTemperatureSampler.sampleDetailed() {
+        if let temperatureDetail = await cpuTemperatureSampler.sampleDetailed() {
             cpuTemperatureDetail = temperatureDetail
-            append(.cpuTemperature, value: temperatureDetail.overall, timestamp: timestamp)
+            if let overall = temperatureDetail.overall {
+                append(.cpuTemperature, value: overall, timestamp: timestamp)
+            }
         }
 
         if let detail = batterySampler.sampleDetailed() {

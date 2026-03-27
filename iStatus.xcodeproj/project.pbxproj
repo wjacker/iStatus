@@ -23,7 +23,55 @@
 		A1B2C3D4E5F601234567892F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678945 /* Assets.xcassets */; };
 		A1B2C3D4E5F601234567893A /* MemoryStackChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601234567893B /* MemoryStackChartView.swift */; };
 		A1B2C3D4E5F6012345678952 /* CPUTemperatureSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678953 /* CPUTemperatureSampler.swift */; };
+		A1B2C3D4E5F6012345678954 /* PrivilegedMetricsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678955 /* PrivilegedMetricsModels.swift */; };
+		A1B2C3D4E5F6012345678956 /* PrivilegedMetricsXPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678957 /* PrivilegedMetricsXPC.swift */; };
+		A1B2C3D4E5F6012345678958 /* PrivilegedMetricsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678959 /* PrivilegedMetricsClient.swift */; };
+		A1B2C3D4E5F601234567895A /* PrivilegedHelperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601234567895B /* PrivilegedHelperManager.swift */; };
+		A1B2C3D4E5F6012345678978 /* PrivilegedHelperEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678979 /* PrivilegedHelperEnvironment.swift */; };
+		A1B2C3D4E5F601234567895C /* com.jack.istatus.powermetrics-helper.plist in Copy Launch Daemons */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601234567895D /* com.jack.istatus.powermetrics-helper.plist */; };
+		A1B2C3D4E5F601234567895E /* iStatusPowermetricsHelper in Copy Helper */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678961 /* iStatusPowermetricsHelper */; };
+		A1B2C3D4E5F6012345678962 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678963 /* main.swift */; };
+		A1B2C3D4E5F6012345678964 /* PowermetricsDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678965 /* PowermetricsDaemon.swift */; };
+		A1B2C3D4E5F6012345678966 /* MetricModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678936 /* MetricModels.swift */; };
+		A1B2C3D4E5F6012345678967 /* CPUTemperatureSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678953 /* CPUTemperatureSampler.swift */; };
+		A1B2C3D4E5F6012345678968 /* PrivilegedMetricsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678955 /* PrivilegedMetricsModels.swift */; };
+		A1B2C3D4E5F6012345678969 /* PrivilegedMetricsXPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678957 /* PrivilegedMetricsXPC.swift */; };
+		A1B2C3D4E5F601234567896A /* PrivilegedMetricsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678959 /* PrivilegedMetricsClient.swift */; };
+		A1B2C3D4E5F601234567897A /* PrivilegedHelperEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678979 /* PrivilegedHelperEnvironment.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A1B2C3D4E5F601234567896B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1B2C3D4E5F6012345678901 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1B2C3D4E5F6012345678960;
+			remoteInfo = iStatusPowermetricsHelper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1B2C3D4E5F601234567896C /* Copy Helper */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Library/LaunchServices";
+			dstSubfolderSpec = 16;
+			files = (
+				A1B2C3D4E5F601234567895E /* iStatusPowermetricsHelper in Copy Helper */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3D4E5F601234567896D /* Copy Launch Daemons */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons";
+			dstSubfolderSpec = 16;
+			files = (
+				A1B2C3D4E5F601234567895C /* com.jack.istatus.powermetrics-helper.plist in Copy Launch Daemons */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A1B2C3D4E5F6012345678914 /* iStatus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = iStatus.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -45,10 +93,26 @@
 		A1B2C3D4E5F6012345678946 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678950 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		A1B2C3D4E5F6012345678953 /* CPUTemperatureSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUTemperatureSampler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678955 /* PrivilegedMetricsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedMetricsModels.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678957 /* PrivilegedMetricsXPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedMetricsXPC.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678959 /* PrivilegedMetricsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedMetricsClient.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F601234567895B /* PrivilegedHelperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedHelperManager.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678979 /* PrivilegedHelperEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedHelperEnvironment.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F601234567895D /* com.jack.istatus.powermetrics-helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "com.jack.istatus.powermetrics-helper.plist"; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678961 /* iStatusPowermetricsHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = iStatusPowermetricsHelper; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F6012345678963 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678965 /* PowermetricsDaemon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowermetricsDaemon.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A1B2C3D4E5F6012345678907 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3D4E5F601234567896F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -68,7 +132,10 @@
 				A1B2C3D4E5F6012345678934 /* MiniChartView.swift */,
 				A1B2C3D4E5F601234567893B /* MemoryStackChartView.swift */,
 				A1B2C3D4E5F6012345678935 /* RingGaugeView.swift */,
+				A1B2C3D4E5F6012345678970 /* Shared */,
+				A1B2C3D4E5F6012345678971 /* Helper */,
 				A1B2C3D4E5F6012345678947 /* Metrics */,
+				A1B2C3D4E5F6012345678972 /* iStatusHelper */,
 				A1B2C3D4E5F6012345678948 /* Resources */,
 				A1B2C3D4E5F6012345678903 /* Products */,
 			);
@@ -79,6 +146,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6012345678914 /* iStatus.app */,
+				A1B2C3D4E5F6012345678961 /* iStatusPowermetricsHelper */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -98,6 +166,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6012345678945 /* Assets.xcassets */,
+				A1B2C3D4E5F601234567895D /* com.jack.istatus.powermetrics-helper.plist */,
 				A1B2C3D4E5F6012345678946 /* Info.plist */,
 			);
 			path = Resources;
@@ -124,6 +193,34 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		A1B2C3D4E5F6012345678970 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678955 /* PrivilegedMetricsModels.swift */,
+				A1B2C3D4E5F6012345678957 /* PrivilegedMetricsXPC.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678971 /* Helper */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678979 /* PrivilegedHelperEnvironment.swift */,
+				A1B2C3D4E5F6012345678959 /* PrivilegedMetricsClient.swift */,
+				A1B2C3D4E5F601234567895B /* PrivilegedHelperManager.swift */,
+			);
+			path = Helper;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6012345678972 /* iStatusHelper */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6012345678963 /* main.swift */,
+				A1B2C3D4E5F6012345678965 /* PowermetricsDaemon.swift */,
+			);
+			path = iStatusHelper;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -134,15 +231,34 @@
 				A1B2C3D4E5F6012345678905 /* Sources */,
 				A1B2C3D4E5F6012345678906 /* Resources */,
 				A1B2C3D4E5F6012345678907 /* Frameworks */,
+				A1B2C3D4E5F601234567896C /* Copy Helper */,
+				A1B2C3D4E5F601234567896D /* Copy Launch Daemons */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1B2C3D4E5F6012345678973 /* PBXTargetDependency */,
 			);
 			name = iStatus;
 			productName = iStatus;
 			productReference = A1B2C3D4E5F6012345678914 /* iStatus.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A1B2C3D4E5F6012345678960 /* iStatusPowermetricsHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D4E5F6012345678974 /* Build configuration list for PBXNativeTarget "iStatusPowermetricsHelper" */;
+			buildPhases = (
+				A1B2C3D4E5F6012345678975 /* Sources */,
+				A1B2C3D4E5F601234567896F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iStatusPowermetricsHelper;
+			productName = iStatusPowermetricsHelper;
+			productReference = A1B2C3D4E5F6012345678961 /* iStatusPowermetricsHelper */;
+			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
@@ -154,6 +270,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					A1B2C3D4E5F6012345678904 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					A1B2C3D4E5F6012345678960 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -172,9 +291,18 @@
 			projectRoot = "";
 			targets = (
 				A1B2C3D4E5F6012345678904 /* iStatus */,
+				A1B2C3D4E5F6012345678960 /* iStatusPowermetricsHelper */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXTargetDependency section */
+		A1B2C3D4E5F6012345678973 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1B2C3D4E5F6012345678960 /* iStatusPowermetricsHelper */;
+			targetProxy = A1B2C3D4E5F601234567896B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A1B2C3D4E5F6012345678906 /* Resources */ = {
@@ -207,6 +335,26 @@
 				A1B2C3D4E5F601234567892C /* NetworkSampler.swift in Sources */,
 				A1B2C3D4E5F601234567892D /* BatterySampler.swift in Sources */,
 				A1B2C3D4E5F6012345678952 /* CPUTemperatureSampler.swift in Sources */,
+				A1B2C3D4E5F6012345678954 /* PrivilegedMetricsModels.swift in Sources */,
+				A1B2C3D4E5F6012345678956 /* PrivilegedMetricsXPC.swift in Sources */,
+				A1B2C3D4E5F6012345678958 /* PrivilegedMetricsClient.swift in Sources */,
+				A1B2C3D4E5F601234567895A /* PrivilegedHelperManager.swift in Sources */,
+				A1B2C3D4E5F6012345678978 /* PrivilegedHelperEnvironment.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3D4E5F6012345678975 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F6012345678962 /* main.swift in Sources */,
+				A1B2C3D4E5F6012345678964 /* PowermetricsDaemon.swift in Sources */,
+				A1B2C3D4E5F6012345678966 /* MetricModels.swift in Sources */,
+				A1B2C3D4E5F6012345678967 /* CPUTemperatureSampler.swift in Sources */,
+				A1B2C3D4E5F6012345678968 /* PrivilegedMetricsModels.swift in Sources */,
+				A1B2C3D4E5F6012345678969 /* PrivilegedMetricsXPC.swift in Sources */,
+				A1B2C3D4E5F601234567896A /* PrivilegedMetricsClient.swift in Sources */,
+				A1B2C3D4E5F601234567897A /* PrivilegedHelperEnvironment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -283,6 +431,46 @@
 			};
 			name = Release;
 		};
+		A1B2C3D4E5F6012345678976 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D4E5F6012345678950 /* Project.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(ISTATUS_DEVELOPMENT_TEAM)";
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = "";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ISTATUS_BUNDLE_IDENTIFIER).powermetrics-helper";
+				PRODUCT_NAME = iStatusPowermetricsHelper;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F6012345678977 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D4E5F6012345678950 /* Project.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(ISTATUS_DEVELOPMENT_TEAM)";
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = "";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ISTATUS_BUNDLE_IDENTIFIER).powermetrics-helper";
+				PRODUCT_NAME = iStatusPowermetricsHelper;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -300,6 +488,15 @@
 			buildConfigurations = (
 				A1B2C3D4E5F6012345678912 /* Debug */,
 				A1B2C3D4E5F6012345678913 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A1B2C3D4E5F6012345678974 /* Build configuration list for PBXNativeTarget "iStatusPowermetricsHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F6012345678976 /* Debug */,
+				A1B2C3D4E5F6012345678977 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -45,10 +45,22 @@ struct CPUFanStat: Identifiable, Sendable {
     let rpm: Double
 }
 
+struct CPUThermalPressure: Sendable {
+    let level: String
+}
+
+struct CPUPowerDetail: Sendable {
+    let packageWatts: Double?
+    let cpuWatts: Double?
+}
+
 struct CPUTemperatureDetail: Sendable {
-    let overall: Double
+    let overall: Double?
     let sensors: [CPUTemperatureSensorStat]
     let fans: [CPUFanStat]
+    let thermalPressure: CPUThermalPressure?
+    let power: CPUPowerDetail?
+    let statusMessage: String?
 }
 
 struct MemoryDetail: Sendable {

@@ -26,7 +26,9 @@ final class AppServices {
     let menuBarSettings = MenuBarSettingsStore()
     lazy var windowController = AppWindowController(services: self)
 
-    private init() {}
+    private init() {
+        PrivilegedHelperManager.shared.registerIfNeeded()
+    }
 }
 
 @MainActor

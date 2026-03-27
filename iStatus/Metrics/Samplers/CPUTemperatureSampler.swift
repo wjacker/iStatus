@@ -3,28 +3,77 @@ import IOKit
 
 final class CPUTemperatureSampler {
     private(set) var isSupported: Bool = false
+    private var hasLoggedProbeSummary = false
+    private var hasLoggedDevelopmentHelperMessage = false
+    private let helperClient = PrivilegedMetricsClient()
+    private let appleSiliconHelperMessage =
+        "Apple Silicon blocks this direct SMC path. Matching apps use a privileged daemon/helper plus powermetrics for CPU thermal and fan data."
 
-    func sampleDetailed() -> CPUTemperatureDetail? {
+    func sampleDetailed() async -> CPUTemperatureDetail? {
+        if let helperSnapshot = await helperClient.fetchCPUMetrics(),
+           let helperDetail = detail(from: helperSnapshot) {
+            isSupported = helperDetail.overall != nil ||
+                !helperDetail.sensors.isEmpty ||
+                !helperDetail.fans.isEmpty ||
+                helperDetail.power?.packageWatts != nil ||
+                helperDetail.power?.cpuWatts != nil ||
+                helperDetail.thermalPressure != nil
+            return helperDetail
+        }
+
+        return sampleDirectDetailed()
+    }
+
+    func sampleDirectDetailed() -> CPUTemperatureDetail? {
         let smcSnapshot = sampleSnapshotFromAppleSMC()
         let ioSensors = sampleSensorRowsFromIOHWSensors()
-        let sensors = (smcSnapshot?.sensors ?? []).isEmpty ? ioSensors : (smcSnapshot?.sensors ?? ioSensors)
-        let overall = smcSnapshot?.overall ?? sensors.first?.celsius
+        let sensors = preferredSensorRows(primary: smcSnapshot.sensors, fallback: ioSensors)
+        let overall = smcSnapshot.overall ?? overallValue(from: sensors)
+        let fans = smcSnapshot.fans
+        let statusMessage = statusMessage(smcSnapshot: smcSnapshot, ioSensors: ioSensors)
 
-        guard let overall else {
+        logProbeSummaryIfNeeded(
+            smcSensorCount: smcSnapshot.sensors.count,
+            ioSensorCount: ioSensors.count,
+            fanCount: fans.count,
+            overall: overall
+        )
+
+        guard overall != nil || !fans.isEmpty || !sensors.isEmpty || statusMessage != nil else {
             isSupported = false
             return nil
         }
 
-        isSupported = true
+        isSupported = overall != nil || !fans.isEmpty || !sensors.isEmpty
         return CPUTemperatureDetail(
             overall: overall,
             sensors: sensors,
-            fans: smcSnapshot?.fans ?? []
+            fans: fans,
+            thermalPressure: nil,
+            power: nil,
+            statusMessage: statusMessage
         )
     }
 
-    func sample() -> Double? {
-        sampleDetailed()?.overall
+    func sample() async -> Double? {
+        (await sampleDetailed())?.overall
+    }
+
+    private func detail(from snapshot: PrivilegedCPUMetricsSnapshot) -> CPUTemperatureDetail? {
+        guard snapshot.hasData || snapshot.statusMessage != nil else {
+            return nil
+        }
+
+        return CPUTemperatureDetail(
+            overall: snapshot.overallTemperatureCelsius,
+            sensors: snapshot.sensors.map { CPUTemperatureSensorStat(name: $0.name, celsius: $0.celsius) },
+            fans: snapshot.fans.map { CPUFanStat(name: $0.name, rpm: $0.rpm) },
+            thermalPressure: snapshot.thermal?.pressureLevel.map { CPUThermalPressure(level: $0) },
+            power: snapshot.power.map {
+                CPUPowerDetail(packageWatts: $0.packageWatts, cpuWatts: $0.cpuWatts)
+            },
+            statusMessage: snapshot.statusMessage
+        )
     }
 
     private func sampleSensorRowsFromIOHWSensors() -> [CPUTemperatureSensorStat] {
@@ -118,16 +167,62 @@ final class CPUTemperatureSampler {
         return properties
     }
 
-    private func sampleSnapshotFromAppleSMC() -> (overall: Double?, sensors: [CPUTemperatureSensorStat], fans: [CPUFanStat])? {
-        guard let service = findSMCService() else {
-            return nil
+    private func sampleSnapshotFromAppleSMC() -> (overall: Double?, sensors: [CPUTemperatureSensorStat], fans: [CPUFanStat], connectionOpened: Bool) {
+        guard let connection = openFirstAvailableSMCConnection() else {
+            return (nil, [], [], false)
         }
-        defer { IOObjectRelease(service) }
-
-        guard let connection = openSMCConnection(service: service) else { return nil }
         defer { IOServiceClose(connection) }
 
-        let sensorSpecs: [(name: String, key: String, rank: Int)] = [
+        let sensorSpecs = mergedSensorSpecs()
+        var overall: Double?
+        var rankedSensors: [(rank: Int, stat: CPUTemperatureSensorStat)] = []
+        var seenNames = Set<String>()
+        for spec in sensorSpecs {
+            if let value = readSMCKey(spec.key, connection: connection) {
+                if overall == nil, spec.rank >= 80 {
+                    overall = value
+                }
+                if seenNames.insert(spec.name).inserted {
+                    rankedSensors.append((spec.rank, CPUTemperatureSensorStat(name: spec.name, celsius: value)))
+                }
+            }
+        }
+
+        let sensors = rankedSensors
+            .sorted { lhs, rhs in
+                if lhs.rank == rhs.rank {
+                    return lhs.stat.name < rhs.stat.name
+                }
+                return lhs.rank > rhs.rank
+            }
+            .map(\.stat)
+
+        let fans = sampleFans(connection: connection)
+
+        return (overall ?? overallValue(from: sensors), sensors, fans, true)
+    }
+
+    private func openFirstAvailableSMCConnection() -> io_connect_t? {
+        for serviceName in [
+            "AppleSMCInterface",
+            "AppleSMCKeysEndpoint",
+            "AppleSMC"
+        ] {
+            let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching(serviceName))
+            guard service != 0 else { continue }
+            defer { IOObjectRelease(service) }
+
+            if let connection = openSMCConnection(service: service) {
+                return connection
+            }
+        }
+
+        return nil
+    }
+
+    private func mergedSensorSpecs() -> [(name: String, key: String, rank: Int)] {
+        let staticSpecs: [(name: String, key: String, rank: Int)] = [
+            ("CPU", "mTPL", 110),
             ("CPU", "TC0D", 100),
             ("CPU", "TC0E", 99),
             ("CPU", "TC0F", 98),
@@ -146,40 +241,12 @@ final class CPUTemperatureSampler {
             ("Palm Rest", "Th1H", 10)
         ]
 
-        var overall: Double?
-        var sensors: [CPUTemperatureSensorStat] = []
-        var seenNames = Set<String>()
-        for spec in sensorSpecs {
-            if let value = readSMCKey(spec.key, connection: connection) {
-                if overall == nil, spec.rank >= 80 {
-                    overall = value
-                }
-                if seenNames.insert(spec.name).inserted {
-                    sensors.append(CPUTemperatureSensorStat(name: spec.name, celsius: value))
-                }
-            }
+        var merged = staticSpecs
+        let existingKeys = Set(staticSpecs.map(\.key))
+        for dynamicSpec in appleSiliconSensorSpecs() where !existingKeys.contains(dynamicSpec.key) {
+            merged.append(dynamicSpec)
         }
-
-        let fans = sampleFans(connection: connection)
-
-        return (overall, sensors, fans)
-    }
-
-    private func findSMCService() -> io_service_t? {
-        let serviceNames = [
-            "AppleSMCKeysEndpoint",
-            "AppleSMC",
-            "AppleSMCInterface"
-        ]
-
-        for name in serviceNames {
-            let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching(name))
-            if service != 0 {
-                return service
-            }
-        }
-
-        return nil
+        return merged
     }
 
     private func sampleFans(connection: io_connect_t) -> [CPUFanStat] {
@@ -203,6 +270,95 @@ final class CPUTemperatureSampler {
         }
 
         return fans
+    }
+
+    private func preferredSensorRows(primary: [CPUTemperatureSensorStat], fallback: [CPUTemperatureSensorStat]) -> [CPUTemperatureSensorStat] {
+        if !primary.isEmpty {
+            return primary
+        }
+        return fallback
+    }
+
+    private func statusMessage(
+        smcSnapshot: (overall: Double?, sensors: [CPUTemperatureSensorStat], fans: [CPUFanStat], connectionOpened: Bool),
+        ioSensors: [CPUTemperatureSensorStat]
+    ) -> String? {
+        guard smcSnapshot.overall == nil, smcSnapshot.sensors.isEmpty, smcSnapshot.fans.isEmpty, ioSensors.isEmpty else {
+            return nil
+        }
+        if PrivilegedHelperEnvironment.isDevelopmentRun {
+            if !hasLoggedDevelopmentHelperMessage {
+                hasLoggedDevelopmentHelperMessage = true
+                debugLog("CPUTemperatureSampler using development fallback path")
+            }
+            return PrivilegedHelperEnvironment.developmentFallbackMessage
+        }
+        guard !smcSnapshot.connectionOpened, !appleSiliconSensorSpecs().isEmpty else {
+            return nil
+        }
+        return appleSiliconHelperMessage
+    }
+
+    private func overallValue(from sensors: [CPUTemperatureSensorStat]) -> Double? {
+        if let cpuLike = sensors.first(where: { sensor in
+            let name = sensor.name.lowercased()
+            return name.contains("cpu") || name.contains("die")
+        }) {
+            return cpuLike.celsius
+        }
+        return sensors.first?.celsius
+    }
+
+    private func appleSiliconSensorSpecs() -> [(name: String, key: String, rank: Int)] {
+        let matching = IOServiceMatching("AppleARMIODevice")
+        var iterator: io_iterator_t = 0
+        let result = IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator)
+        guard result == KERN_SUCCESS else { return [] }
+        defer { IOObjectRelease(iterator) }
+
+        var specs: [(name: String, key: String, rank: Int)] = []
+        var service = IOIteratorNext(iterator)
+        while service != 0 {
+            defer { IOObjectRelease(service) }
+
+            let compatible = IORegistryEntryCreateCFProperty(service, "compatible" as CFString, kCFAllocatorDefault, 0)?
+                .takeRetainedValue() as? Data
+            let sensorCode = IORegistryEntryCreateCFProperty(service, "sensor" as CFString, kCFAllocatorDefault, 0)?
+                .takeRetainedValue() as? Data
+
+            let isSMCTempSensor = compatible.flatMap {
+                String(data: $0.prefix { $0 != 0 }, encoding: .ascii)
+            } == "smc-tempsensor"
+            let key = sensorCode.flatMap {
+                String(data: $0.prefix { $0 != 0 }, encoding: .ascii)
+            }
+
+            if isSMCTempSensor, let key, key.count == 4 {
+                specs.append((appleSiliconSensorLabel(for: key), key, appleSiliconSensorRank(for: key)))
+            }
+
+            service = IOIteratorNext(iterator)
+        }
+
+        return specs
+    }
+
+    private func appleSiliconSensorLabel(for key: String) -> String {
+        switch key {
+        case "mTPL":
+            return "CPU"
+        default:
+            return key
+        }
+    }
+
+    private func appleSiliconSensorRank(for key: String) -> Int {
+        switch key {
+        case "mTPL":
+            return 110
+        default:
+            return 40
+        }
     }
 
     private func normalizeTemperature(_ raw: Any?) -> Double? {
@@ -283,6 +439,10 @@ final class CPUTemperatureSampler {
     private func openSMCConnection(service: io_service_t) -> io_connect_t? {
         var connection: io_connect_t = 0
         let result = IOServiceOpen(service, mach_task_self_, 0, &connection)
+        if !hasLoggedProbeSummary {
+            let serviceName = IORegistryEntryGetNameString(service) ?? "unknown"
+            debugLog("CPUTemperatureSampler open \(serviceName) -> \(result)")
+        }
         guard result == KERN_SUCCESS else { return nil }
         return connection
     }
@@ -360,6 +520,23 @@ final class CPUTemperatureSampler {
     private static func fourCharCode(_ key: String) -> UInt32 {
         key.utf8.prefix(4).reduce(0) { ($0 << 8) | UInt32($1) }
     }
+
+    private func logProbeSummaryIfNeeded(smcSensorCount: Int, ioSensorCount: Int, fanCount: Int, overall: Double?) {
+        guard !hasLoggedProbeSummary else { return }
+        hasLoggedProbeSummary = true
+        let overallText = overall.map { String(format: "%.1f", $0) } ?? "nil"
+        let dynamicKeys = appleSiliconSensorSpecs().map(\.key).joined(separator: ",")
+        debugLog(
+            "CPUTemperatureSampler probe smcSensors=\(smcSensorCount) ioSensors=\(ioSensorCount) fans=\(fanCount) overall=\(overallText) dynamicAppleSiliconKeys=\(dynamicKeys)"
+        )
+    }
+}
+
+private func IORegistryEntryGetNameString(_ service: io_service_t) -> String? {
+    var name = [CChar](repeating: 0, count: 128)
+    let result = IORegistryEntryGetName(service, &name)
+    guard result == KERN_SUCCESS else { return nil }
+    return String(cString: name)
 }
 
 private enum SMCCommand: UInt8 {

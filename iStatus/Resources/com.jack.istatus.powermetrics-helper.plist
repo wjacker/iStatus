@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AssociatedBundleIdentifiers</key>
+	<string>com.jack.istatus</string>
+	<key>Label</key>
+	<string>com.jack.istatus.powermetrics-helper</string>
+	<key>BundleProgram</key>
+	<string>Contents/Library/LaunchServices/iStatusPowermetricsHelper</string>
+	<key>MachServices</key>
+	<dict>
+		<key>com.jack.istatus.powermetrics-helper</key>
+		<true/>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>UserName</key>
+	<string>root</string>
+</dict>
+</plist>

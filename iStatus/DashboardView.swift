@@ -13,7 +13,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static var visibleCases: [DashboardSection] {
-        [.overview, .cpu, .memory, .disk, .network, .battery]
+        [.overview, .cpu, .memory, .disk, .network, .temperature, .battery]
     }
 }
 
@@ -1170,6 +1170,7 @@ struct CPUTemperatureCardView: View {
 
                     HStack(spacing: 12) {
                         TemperatureSummaryPill(title: "CPU", value: formatTemperature(metricsStore.latestValue(.cpuTemperature)))
+                        TemperatureSummaryPill(title: "POWER", value: powerSummary)
                         TemperatureSummaryPill(title: "FANS", value: fanSummary)
                     }
                 }
@@ -1177,6 +1178,7 @@ struct CPUTemperatureCardView: View {
             }
 
             BatteryStatSection(title: "TEMPERATURE", rows: temperatureRows.isEmpty ? unsupportedRows : temperatureRows)
+            BatteryStatSection(title: "THERMAL / POWER", rows: thermalRows.isEmpty ? unsupportedRows : thermalRows)
             BatteryStatSection(title: "FANS", rows: fanRows.isEmpty ? unsupportedRows : fanRows)
         }
         .padding(16)
@@ -1206,8 +1208,32 @@ struct CPUTemperatureCardView: View {
         }
     }
 
+    private var thermalRows: [BatteryStatRow] {
+        guard let detail = metricsStore.cpuTemperatureDetail else { return [] }
+
+        var rows: [BatteryStatRow] = []
+        if let thermalPressure = detail.thermalPressure?.level {
+            rows.append(BatteryStatRow(title: "Pressure", value: thermalPressure))
+        }
+        if let packageWatts = detail.power?.packageWatts {
+            rows.append(BatteryStatRow(title: "Package", value: formatWatts(packageWatts)))
+        }
+        if let cpuWatts = detail.power?.cpuWatts {
+            rows.append(BatteryStatRow(title: "CPU", value: formatWatts(cpuWatts)))
+        }
+        return rows
+    }
+
     private var unsupportedRows: [BatteryStatRow] {
-        [BatteryStatRow(title: "Status", value: "Unavailable from IOKit/SMC on this Mac")]
+        let message = metricsStore.cpuTemperatureDetail?.statusMessage ?? "Unavailable from IOKit/SMC on this Mac"
+        return [BatteryStatRow(title: "Status", value: message)]
+    }
+
+    private var powerSummary: String {
+        if let watts = metricsStore.cpuTemperatureDetail?.power?.packageWatts {
+            return formatWatts(watts)
+        }
+        return "--"
     }
 
     private var fanSummary: String {
@@ -1223,6 +1249,11 @@ struct CPUTemperatureCardView: View {
     private func formatRPM(_ value: Double?) -> String {
         guard let value else { return "--" }
         return "\(Int(value.rounded())).formatted(.number.grouping(.automatic)) rpm"
+    }
+
+    private func formatWatts(_ value: Double?) -> String {
+        guard let value else { return "--" }
+        return String(format: "%.2f W", value)
     }
 }
 
