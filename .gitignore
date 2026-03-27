@@ -3,3 +3,4 @@
 xcuserdata/
 *.xcuserstate
 iStatus/Config/Project.local.xcconfig
+.clang-module-cache/
