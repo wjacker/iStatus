@@ -251,9 +251,6 @@ struct DashboardView: View {
         HStack(alignment: .center, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 10) {
-                    if let menuBarItem = selectedSection.menuBarItem {
-                        MenuBarVisibilityButton(item: menuBarItem, style: .header)
-                    }
                     Label("Live", systemImage: "dot.radiowaves.left.and.right")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .padding(.horizontal, 10)
@@ -265,12 +262,19 @@ struct DashboardView: View {
                         )
                         .clipShape(Capsule())
                         .foregroundStyle(selectedSection.accent)
+
+                    if let menuBarItem = selectedSection.menuBarItem {
+                        MenuBarVisibilityButton(item: menuBarItem, style: .header)
+                    }
+                }
+                HStack(spacing: 12) {
+                    MetricGlyph(symbol: selectedSection.icon, accent: selectedSection.accent, size: 42)
                     Text(selectedSection.rawValue)
                         .font(.system(size: 34, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                 }
                 Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
-                    .font(.subheadline)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.74))
             }
             Spacer()
@@ -282,16 +286,17 @@ struct DashboardView: View {
 
     private var quickStats: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 14)], spacing: 14) {
-            StatPill(title: "CPU", value: metricsStore.latestValue(.cpuUsage), unit: "%", accent: .pink)
-            StatPill(title: "MEM", value: metricsStore.latestValue(.memoryUsedPercent), unit: "%", accent: .cyan)
+            StatPill(title: "CPU", icon: "cpu.fill", value: metricsStore.latestValue(.cpuUsage), unit: "%", accent: .pink)
+            StatPill(title: "Memory", icon: "memorychip.fill", value: metricsStore.latestValue(.memoryUsedPercent), unit: "%", accent: .cyan)
             StatPill(
-                title: "NET",
+                title: "Network",
+                icon: "wave.3.right",
                 value: metricsStore.latestValue(.networkTotalKBps),
                 unit: "KB/s",
                 accent: .mint,
                 formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkTotalKBps))
             )
-            StatPill(title: "BAT", value: metricsStore.latestValue(.batteryPercent), unit: "%", accent: .green)
+            StatPill(title: "Battery", icon: "battery.100percent", value: metricsStore.latestValue(.batteryPercent), unit: "%", accent: .green)
         }
     }
 
@@ -329,6 +334,7 @@ struct DashboardView: View {
     private var cpuCard: some View {
         MetricCard(
             title: "CPU",
+            icon: "cpu.fill",
             value: metricsStore.latestValue(.cpuUsage),
             unit: "%",
             series: filteredSeries(.cpuUsage),
@@ -383,6 +389,7 @@ struct DashboardView: View {
     private var networkCard: some View {
         MetricCard(
             title: "Network",
+            icon: "wave.3.right",
             value: metricsStore.latestValue(.networkTotalKBps),
             unit: "KB/s",
             formattedValueOverride: formatNetworkRate(kilobytesPerSecond: metricsStore.latestValue(.networkTotalKBps)),
@@ -500,6 +507,7 @@ private extension DashboardSection {
 
 struct StatPill: View {
     let title: String
+    let icon: String
     let value: Double?
     let unit: String
     let accent: Color
@@ -508,10 +516,13 @@ struct StatPill: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(title)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .tracking(1.1)
+                HStack(spacing: 8) {
+                    MetricGlyph(symbol: icon, accent: accent, size: 22)
+                    Text(title)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .tracking(1.1)
+                }
                 Spacer()
                 Circle()
                     .fill(accent)
@@ -582,12 +593,14 @@ struct TimeRangePicker: View {
             }
         }
         .padding(6)
+        .frame(height: 44)
         .dashboardPanel(fillOpacity: 0.1, strokeOpacity: 0.12, cornerRadius: 14, shadow: false)
     }
 }
 
 struct MetricCard<Footer: View>: View {
     let title: String
+    var icon: String? = nil
     let value: Double?
     let unit: String
     var formattedValueOverride: String? = nil
@@ -600,26 +613,13 @@ struct MetricCard<Footer: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(title)
-                        .font(.system(size: 21, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text("Recent activity")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.6))
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 6) {
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 10, height: 10)
-                        .shadow(color: accent.opacity(0.8), radius: 8)
-                    Text(formattedValue)
-                        .font(.system(size: 26, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-            }
+            DashboardCardHeader(
+                title: title,
+                subtitle: "Recent activity",
+                value: formattedValue,
+                accent: accent,
+                icon: icon
+            )
 
             MiniChartView(
                 samples: series,
@@ -680,11 +680,26 @@ struct MenuBarVisibilityButton: View {
     }
 
     var body: some View {
-        Toggle(isOn: isOnBinding) {
-            EmptyView()
+        Button {
+            isOnBinding.wrappedValue.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: menuBarSettings.isEnabled(item) ? "menubar.rectangle" : "menubar.rectangle.slash")
+                    .font(.system(size: 11, weight: .bold))
+                Text(menuBarSettings.isEnabled(item) ? "Menu Bar On" : "Menu Bar Off")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(menuBarSettings.isEnabled(item) ? 0.14 : 0.08))
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(menuBarSettings.isEnabled(item) ? 0.18 : 0.1), lineWidth: 1)
+            )
+            .clipShape(Capsule())
+            .foregroundStyle(menuBarSettings.isEnabled(item) ? .white : .white.opacity(0.7))
         }
-        .labelsHidden()
-        .toggleStyle(.checkbox)
+        .buttonStyle(.plain)
         .help(menuBarSettings.isEnabled(item) ? "Hide from menu bar" : "Show in menu bar")
     }
 
@@ -769,6 +784,76 @@ struct SectionHeader: View {
             .foregroundStyle(.white.opacity(0.62))
             .tracking(1.2)
             .padding(.top, 8)
+    }
+}
+
+struct MetricGlyph: View {
+    let symbol: String
+    let accent: Color
+    var size: CGFloat = 28
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.34, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [accent.opacity(0.28), Color.white.opacity(0.08)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            Image(systemName: symbol)
+                .font(.system(size: size * 0.42, weight: .bold))
+                .foregroundStyle(accent)
+        }
+        .frame(width: size, height: size)
+        .overlay(
+            RoundedRectangle(cornerRadius: size * 0.34, style: .continuous)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
+    }
+}
+
+struct DashboardCardHeader: View {
+    let title: String
+    let subtitle: String
+    let value: String
+    let accent: Color
+    var icon: String? = nil
+
+    var body: some View {
+        HStack(alignment: .top) {
+            HStack(spacing: 12) {
+                if let icon {
+                    MetricGlyph(symbol: icon, accent: accent, size: 34)
+                }
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(title.uppercased())
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.62))
+                        .tracking(1.2)
+                    Text(title)
+                        .font(.system(size: 23, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.58))
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 8) {
+                Circle()
+                    .fill(accent)
+                    .frame(width: 10, height: 10)
+                    .shadow(color: accent.opacity(0.8), radius: 8)
+                Text(value)
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+        }
     }
 }
 
@@ -938,6 +1023,14 @@ struct DiskCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            DashboardCardHeader(
+                title: "Disk",
+                subtitle: "Storage throughput",
+                value: throughputValue,
+                accent: .blue,
+                icon: "internaldrive.fill"
+            )
+
             HStack(alignment: .top, spacing: 14) {
                 if let detail = metricsStore.diskDetail {
                     DiskUsageRingView(volume: detail.volume)
@@ -1021,6 +1114,12 @@ struct DiskCardView: View {
 
     private func formatTransferRate(_ value: Double) -> String {
         ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .binary) + "/s"
+    }
+
+    private var throughputValue: String {
+        let read = metricsStore.latestValue(.diskReadBytesPerSecond) ?? 0
+        let write = metricsStore.latestValue(.diskWriteBytesPerSecond) ?? 0
+        return formatTransferRate(read + write)
     }
 }
 
@@ -1245,6 +1344,14 @@ struct BatteryCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            DashboardCardHeader(
+                title: "Battery",
+                subtitle: "Power source and health",
+                value: metricsStore.batteryDetail.map { String(format: "%.0f%%", $0.percent) } ?? "--",
+                accent: .green,
+                icon: "battery.100percent"
+            )
+
             if metricsStore.batteryDetail == nil {
                 EmptyStatePanel(
                     icon: "battery.100percent",
@@ -1400,6 +1507,14 @@ struct CPUTemperatureCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            DashboardCardHeader(
+                title: "CPU Temp",
+                subtitle: "Thermal and fan telemetry",
+                value: formatTemperature(metricsStore.latestValue(.cpuTemperature)),
+                accent: .orange,
+                icon: "thermometer.medium"
+            )
+
             HStack(alignment: .top, spacing: 16) {
                 TemperatureHeroRing(value: metricsStore.latestValue(.cpuTemperature))
 
@@ -1754,15 +1869,13 @@ struct MemoryCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Memory")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Spacer()
-                Text(formattedValue)
-                    .font(.system(.title3, design: .rounded))
-                    .foregroundStyle(.cyan)
-            }
+            DashboardCardHeader(
+                title: "Memory",
+                subtitle: "Pressure and allocation mix",
+                value: formattedValue,
+                accent: .cyan,
+                icon: "memorychip.fill"
+            )
 
             if let detail = metricsStore.memoryDetail {
                 HStack(spacing: 16) {

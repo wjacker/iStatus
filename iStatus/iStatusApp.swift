@@ -319,6 +319,11 @@ final class AppWindowController: NSObject, NSWindowDelegate {
                 defer: false
             )
             window.title = "iStatus"
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.styleMask.insert(.fullSizeContentView)
+            window.isMovableByWindowBackground = true
+            window.backgroundColor = .clear
             window.isReleasedWhenClosed = false
             window.minSize = NSSize(width: 1040, height: 760)
             window.center()
