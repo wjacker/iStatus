@@ -252,7 +252,8 @@ struct DashboardView: View {
                 }
             }
             .frame(maxWidth: isCompact ? .infinity : 1220, alignment: .leading)
-            .padding(.horizontal, isCompact ? 18 : 28)
+            .padding(.leading, isCompact ? 4 : 5)
+            .padding(.trailing, isCompact ? 18 : 28)
             .padding(.vertical, isCompact ? 20 : 26)
         }
     }
