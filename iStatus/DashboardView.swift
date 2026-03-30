@@ -80,13 +80,17 @@ struct DashboardView: View {
 
     var body: some View {
         let _ = refreshTick
-        ZStack {
-            dashboardBackground
-                .ignoresSafeArea()
+        GeometryReader { proxy in
+            let availableContentWidth = max(proxy.size.width - sidebarWidth, 320)
 
-            HStack(spacing: 0) {
-                sidebar
-                content
+            ZStack {
+                dashboardBackground
+                    .ignoresSafeArea()
+
+                HStack(spacing: 0) {
+                    sidebar
+                    content(availableWidth: availableContentWidth)
+                }
             }
         }
         .onReceive(metricsStore.$sampleTick) { tick in
@@ -225,67 +229,101 @@ struct DashboardView: View {
             }
         }
         .padding(24)
-        .frame(width: isSidebarCollapsed ? 104 : 228)
+        .frame(width: sidebarWidth)
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isSidebarCollapsed)
     }
 
-    private var content: some View {
-        ScrollView {
+    private var sidebarWidth: CGFloat {
+        isSidebarCollapsed ? 104 : 228
+    }
+
+    private func content(availableWidth: CGFloat) -> some View {
+        let isCompact = availableWidth < 760
+
+        return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                header
-                quickStats
+                header(isCompact: isCompact)
+                quickStats(isCompact: isCompact)
 
                 if selectedSection == .overview {
-                    overviewGrid
+                    overviewGrid(isCompact: isCompact)
                 } else {
                     sectionDetail
                 }
             }
-            .frame(maxWidth: 1220, alignment: .leading)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 26)
+            .frame(maxWidth: isCompact ? .infinity : 1220, alignment: .leading)
+            .padding(.horizontal, isCompact ? 18 : 28)
+            .padding(.vertical, isCompact ? 20 : 26)
         }
     }
 
-    private var header: some View {
-        HStack(alignment: .center, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 10) {
-                    Label("Live", systemImage: "dot.radiowaves.left.and.right")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(selectedSection.accent.opacity(0.2))
-                        .overlay(
-                            Capsule()
-                                .stroke(selectedSection.accent.opacity(0.45), lineWidth: 1)
-                        )
-                        .clipShape(Capsule())
-                        .foregroundStyle(selectedSection.accent)
+    private func header(isCompact: Bool) -> some View {
+        Group {
+            if isCompact {
+                VStack(alignment: .leading, spacing: 16) {
+                    headerMeta
 
-                    if let menuBarItem = selectedSection.menuBarItem {
-                        MenuBarVisibilityButton(item: menuBarItem, style: .header)
+                    HStack(spacing: 12) {
+                        MetricGlyph(symbol: selectedSection.icon, accent: selectedSection.accent, size: 36)
+                        Text(selectedSection.rawValue)
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
+
+                    Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.74))
+
+                    TimeRangePicker(selected: $selectedRange)
                 }
-                HStack(spacing: 12) {
-                    MetricGlyph(symbol: selectedSection.icon, accent: selectedSection.accent, size: 42)
-                    Text(selectedSection.rawValue)
-                        .font(.system(size: 34, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+            } else {
+                HStack(alignment: .center, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        headerMeta
+
+                        HStack(spacing: 12) {
+                            MetricGlyph(symbol: selectedSection.icon, accent: selectedSection.accent, size: 42)
+                            Text(selectedSection.rawValue)
+                                .font(.system(size: 34, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
+                        Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.74))
+                    }
+                    Spacer()
+                    TimeRangePicker(selected: $selectedRange)
                 }
-                Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.74))
             }
-            Spacer()
-            TimeRangePicker(selected: $selectedRange)
         }
         .padding(22)
         .dashboardPanel(fillOpacity: 0.13, strokeOpacity: 0.14)
     }
 
-    private var quickStats: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 14)], spacing: 14) {
+    private var headerMeta: some View {
+        HStack(spacing: 10) {
+            Label("Live", systemImage: "dot.radiowaves.left.and.right")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(selectedSection.accent.opacity(0.2))
+                .overlay(
+                    Capsule()
+                        .stroke(selectedSection.accent.opacity(0.45), lineWidth: 1)
+                )
+                .clipShape(Capsule())
+                .foregroundStyle(selectedSection.accent)
+
+            if let menuBarItem = selectedSection.menuBarItem {
+                MenuBarVisibilityButton(item: menuBarItem, style: .header)
+            }
+        }
+    }
+
+    private func quickStats(isCompact: Bool) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: isCompact ? 132 : 170), spacing: 14)], spacing: 14) {
             StatPill(title: "CPU", icon: "cpu.fill", value: metricsStore.latestValue(.cpuUsage), unit: "%", accent: .pink)
             StatPill(title: "Memory", icon: "memorychip.fill", value: metricsStore.latestValue(.memoryUsedPercent), unit: "%", accent: .cyan)
             StatPill(
@@ -300,8 +338,8 @@ struct DashboardView: View {
         }
     }
 
-    private var overviewGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 18)], spacing: 18) {
+    private func overviewGrid(isCompact: Bool) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: isCompact ? 260 : 320), spacing: 18)], spacing: 18) {
             cpuCard
             memoryCard
             diskCard
@@ -594,6 +632,7 @@ struct TimeRangePicker: View {
         }
         .padding(6)
         .frame(height: 44)
+        .fixedSize(horizontal: true, vertical: false)
         .dashboardPanel(fillOpacity: 0.1, strokeOpacity: 0.12, cornerRadius: 14, shadow: false)
     }
 }

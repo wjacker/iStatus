@@ -313,7 +313,7 @@ final class AppWindowController: NSObject, NSWindowDelegate {
 
             let controller = NSHostingController(rootView: rootView)
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 1180, height: 820),
+                contentRect: NSRect(x: 0, y: 0, width: 1280, height: 820),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
@@ -325,7 +325,8 @@ final class AppWindowController: NSObject, NSWindowDelegate {
             window.isMovableByWindowBackground = true
             window.backgroundColor = .clear
             window.isReleasedWhenClosed = false
-            window.minSize = NSSize(width: 1040, height: 760)
+            window.minSize = NSSize(width: 1280, height: 760)
+            window.contentMinSize = NSSize(width: 1280, height: 760)
             window.center()
             window.contentViewController = controller
             window.delegate = self
