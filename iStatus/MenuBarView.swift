@@ -37,6 +37,17 @@ enum MenuBarMetricItem: String, CaseIterable, Identifiable {
         }
     }
 
+    var accent: Color {
+        switch self {
+        case .network: return .mint
+        case .disk: return .blue
+        case .cpu: return .pink
+        case .memory: return .cyan
+        case .temperature: return .orange
+        case .battery: return .green
+        }
+    }
+
     var storageKey: String {
         "menu_bar_item_\(rawValue)"
     }
@@ -103,38 +114,85 @@ struct MenuBarView: View {
     let onQuit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("iStatus")
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Label("Live", systemImage: "dot.radiowaves.left.and.right")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(Color.mint.opacity(0.2))
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.mint.opacity(0.45), lineWidth: 1)
+                        )
+                        .clipShape(Capsule())
+                        .foregroundStyle(.mint)
+                }
+
+                Text("A cleaner snapshot of your Mac, right from the menu bar.")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+            .padding(16)
+            .menuPanel(fillOpacity: 0.14, strokeOpacity: 0.12)
+
             HStack(spacing: 10) {
-                Text("iStatus")
-                    .font(.headline)
-                Spacer()
-                Button("Open Dashboard") {
+                Button {
                     onOpenDashboard()
+                } label: {
+                    Label("Open Dashboard", systemImage: "rectangle.stack.fill")
+                        .frame(maxWidth: .infinity)
+                }
+
+                Button {
+                    onOpenMenuSettings()
+                } label: {
+                    Label("Menu Bar Settings", systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
                 }
             }
+            .buttonStyle(MenuBarActionButtonStyle())
 
-            Button("Menu Bar Settings") {
-                onOpenMenuSettings()
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Quick Metrics")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .tracking(1.2)
+
+                MenuMetricRow(title: "CPU", value: metricsStore.latestValue(.cpuUsage), accent: .pink)
+                MenuMetricRow(title: "Memory", value: metricsStore.latestValue(.memoryUsedPercent), accent: .cyan)
+                MenuMetricRow(title: "Disk", value: metricsStore.latestValue(.diskUsedPercent), accent: .blue)
+                MenuMetricRow(title: "Network", value: metricsStore.latestValue(.networkTotalKBps), suffix: "KB/s", accent: .mint)
+                MenuMetricRow(title: "Battery", value: metricsStore.latestValue(.batteryPercent), accent: .green)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.blue)
+            .padding(16)
+            .menuPanel(fillOpacity: 0.1, strokeOpacity: 0.1)
 
-            Divider()
-
-            MenuMetricRow(title: "CPU", value: metricsStore.latestValue(.cpuUsage))
-            MenuMetricRow(title: "Memory", value: metricsStore.latestValue(.memoryUsedPercent))
-            MenuMetricRow(title: "Disk", value: metricsStore.latestValue(.diskUsedPercent))
-            MenuMetricRow(title: "Network", value: metricsStore.latestValue(.networkTotalKBps), suffix: "KB/s")
-            MenuMetricRow(title: "Battery", value: metricsStore.latestValue(.batteryPercent))
-
-            Divider()
-
-            Button("Quit") {
+            Button {
                 onQuit()
+            } label: {
+                Label("Quit", systemImage: "power")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(MenuBarActionButtonStyle(tint: Color.red.opacity(0.88)))
         }
-        .padding(14)
+        .padding(16)
         .frame(width: 260)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.06, green: 0.10, blue: 0.18),
+                    Color(red: 0.03, green: 0.05, blue: 0.11)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
     }
 }
 
@@ -246,7 +304,7 @@ struct MenuBarSettingsView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Menu Bar")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 30, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
 
                 Text("Configure which metrics appear in the menu bar preview.")
@@ -268,8 +326,7 @@ struct MenuBarSettingsView: View {
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(12)
+                    .menuPanel(fillOpacity: 0.08, strokeOpacity: 0.1, shadow: false)
                 }
 
                 Spacer()
@@ -289,6 +346,7 @@ struct MenuBarSettingsView: View {
                         HStack(spacing: 10) {
                             Image(systemName: item.icon)
                                 .frame(width: 18)
+                                .foregroundStyle(item.accent)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title)
                                 Text(previewText(for: item))
@@ -298,6 +356,15 @@ struct MenuBarSettingsView: View {
                         }
                     }
                     .toggleStyle(.switch)
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.black.opacity(0.03))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                            )
+                    )
                 }
 
                 Spacer()
@@ -365,15 +432,15 @@ struct MenuBarSettingsView: View {
 
     private func formatTemperature(_ value: Double?) -> String {
         guard let value else { return "--" }
-        return String(format: "%.0f°", value)
+        return String(format: "%.0f°C", value)
     }
 
     private func formatRate(_ value: Double?) -> String {
         guard let value else { return "--" }
         if value > 1024 {
-            return String(format: "%.1fM", value / 1024)
+            return String(format: "%.1f MB/s", value / 1024)
         }
-        return String(format: "%.0fK", value)
+        return String(format: "%.0f KB/s", value)
     }
 
     private func formatRateLong(_ value: Double?) -> String {
@@ -389,18 +456,65 @@ struct MenuMetricRow: View {
     let title: String
     let value: Double?
     var suffix: String = "%"
+    var accent: Color = .blue
 
     var body: some View {
         HStack {
-            Text(title)
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accent)
+                    .frame(width: 8, height: 8)
+                Text(title)
+                    .foregroundStyle(.white.opacity(0.82))
+            }
             Spacer()
             Text(format(value))
-                .font(.system(.body, design: .monospaced))
+                .font(.system(.body, design: .rounded).monospacedDigit())
+                .foregroundStyle(.white)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .menuPanel(fillOpacity: 0.06, strokeOpacity: 0.08, cornerRadius: 12, shadow: false)
     }
 
     private func format(_ value: Double?) -> String {
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, suffix)
+    }
+}
+
+private struct MenuBarActionButtonStyle: ButtonStyle {
+    var tint: Color = Color.blue.opacity(0.9)
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(tint.opacity(configuration.isPressed ? 0.6 : 1))
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+    }
+}
+
+private extension View {
+    func menuPanel(
+        fillOpacity: Double = 0.12,
+        strokeOpacity: Double = 0.12,
+        cornerRadius: CGFloat = 16,
+        shadow: Bool = true
+    ) -> some View {
+        background(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.white.opacity(fillOpacity))
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(Color.white.opacity(strokeOpacity), lineWidth: 1)
+                )
+                .shadow(color: shadow ? .black.opacity(0.18) : .clear, radius: shadow ? 16 : 0, x: 0, y: shadow ? 10 : 0)
+        )
     }
 }
