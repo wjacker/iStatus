@@ -1,4 +1,5 @@
 ISTATUS_BUNDLE_IDENTIFIER = com.jack.istatus
 ISTATUS_DEVELOPMENT_TEAM = 
+ALWAYS_SEARCH_USER_PATHS = NO
 
 #include? "Project.local.xcconfig"
