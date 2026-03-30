@@ -763,10 +763,10 @@ struct MenuBarVisibilityButton: View {
             }
             .padding(.horizontal, 8)
             .frame(height: 44)
-            .background(Color.white.opacity(isEnabled ? 0.12 : 0.06))
+            .background(selectedTint.opacity(0.18))
             .overlay(
                 RoundedRectangle(cornerRadius: 999, style: .continuous)
-                    .stroke(Color.white.opacity(isEnabled ? 0.18 : 0.09), lineWidth: 1)
+                    .stroke(selectedTint.opacity(0.38), lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 999, style: .continuous))
         }
@@ -779,6 +779,10 @@ struct MenuBarVisibilityButton: View {
             get: { menuBarSettings.isEnabled(item) },
             set: { menuBarSettings.setEnabled($0, for: item) }
         )
+    }
+
+    private var selectedTint: Color {
+        isOnBinding.wrappedValue ? Color(red: 0.11, green: 0.50, blue: 0.98) : Color.white
     }
 }
 
@@ -1245,24 +1249,68 @@ struct DiskVolumeHeader: View {
 
 struct DiskUsageRingView: View {
     let volume: DiskVolumeStat
+    private let ringWidth: CGFloat = 18
+    private let segmentGap: CGFloat = 0.012
 
     var body: some View {
         ZStack {
             Circle()
-                .strokeBorder(Color.white.opacity(0.18), lineWidth: 18)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: ringWidth)
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.blue.opacity(0.18), Color.clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 84
+                    )
+                )
 
             ForEach(segments.indices, id: \.self) { index in
                 let segment = segments[index]
                 Circle()
-                    .trim(from: segment.start, to: segment.end)
-                    .stroke(segment.color, style: StrokeStyle(lineWidth: 18, lineCap: .butt))
+                    .trim(from: adjustedStart(for: segment), to: adjustedEnd(for: segment))
+                    .stroke(segment.color, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    .shadow(color: segment.color.opacity(0.22), radius: 6)
+            }
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.03)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .padding(ringWidth + 10)
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                        .padding(ringWidth + 10)
+                )
+
+            VStack(spacing: 4) {
+                Text(String(format: "%.0f%%", volume.usedPercent))
+                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("USED")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .tracking(1.2)
             }
         }
         .padding(14)
         .frame(width: 200, height: 200)
-        .background(Color.white.opacity(0.04))
-        .cornerRadius(18)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.16), radius: 14, x: 0, y: 10)
     }
 
     private var segments: [(start: CGFloat, end: CGFloat, color: Color)] {
@@ -1284,21 +1332,62 @@ struct DiskUsageRingView: View {
             return (start, end, color)
         }
     }
+
+    private func adjustedStart(for segment: (start: CGFloat, end: CGFloat, color: Color)) -> CGFloat {
+        min(segment.start + segmentGap / 2, segment.end)
+    }
+
+    private func adjustedEnd(for segment: (start: CGFloat, end: CGFloat, color: Color)) -> CGFloat {
+        max(segment.end - segmentGap / 2, segment.start)
+    }
 }
 
 struct DiskCapacityLegend: View {
     let volume: DiskVolumeStat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            DiskLegendRow(color: .blue, title: "Used", value: formatBytes(volume.usedBytes))
-            DiskLegendRow(color: .pink, title: "Purgeable", value: formatBytes(volume.purgeableBytes))
-            DiskLegendRow(color: Color.white.opacity(0.35), title: "Free", value: formatBytes(volume.freeBytes))
+        VStack(alignment: .leading, spacing: 16) {
+            Text("CAPACITY BREAKDOWN")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+                .tracking(1.2)
+
+            DiskLegendRow(
+                color: .blue,
+                title: "Used",
+                value: formatBytes(volume.usedBytes),
+                subtitle: String(format: "%.0f%% of disk", volume.usedPercent)
+            )
+            DiskLegendRow(
+                color: .pink,
+                title: "Purgeable",
+                value: formatBytes(volume.purgeableBytes),
+                subtitle: "Recoverable space"
+            )
+            DiskLegendRow(
+                color: Color.white.opacity(0.35),
+                title: "Free",
+                value: formatBytes(volume.freeBytes),
+                subtitle: "Immediately available"
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color.white.opacity(0.04))
-        .cornerRadius(18)
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 8)
     }
 
     private func formatBytes(_ value: UInt64) -> String {
@@ -1310,23 +1399,38 @@ struct DiskLegendRow: View {
     let color: Color
     let title: String
     let value: String
+    let subtitle: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Circle()
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
                 .fill(color)
-                .frame(width: 12, height: 12)
-                .padding(.top, 4)
+                .frame(width: 12, height: 40)
+                .shadow(color: color.opacity(0.35), radius: 6)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.9))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title.uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.58))
+                    .tracking(1.1)
                 Text(value)
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
             }
+
+            Spacer()
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.045))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -1767,24 +1871,50 @@ struct BatteryLargeRingView: View {
     let title: String
     let icon: String?
     let colors: [Color]
+    private let ringWidth: CGFloat = 12
 
     var body: some View {
         ZStack {
             Circle()
-                .strokeBorder(Color.white.opacity(0.18), lineWidth: 12)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: ringWidth)
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [(colors.first ?? .blue).opacity(0.18), Color.clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 56
+                    )
+                )
             Circle()
                 .trim(from: 0, to: CGFloat(min(max(value / 100, 0), 1)))
                 .stroke(
                     AngularGradient(colors: colors, center: .center),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
+                    style: StrokeStyle(lineWidth: ringWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: (colors.first ?? .blue).opacity(0.26), radius: 8)
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.03)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .padding(ringWidth + 8)
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                        .padding(ringWidth + 8)
+                )
 
             VStack(spacing: 2) {
                 if let icon {
                     Image(systemName: icon)
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(colors.first ?? .white)
                 }
                 Text(String(format: "%.0f%%", value))
                     .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -1796,6 +1926,7 @@ struct BatteryLargeRingView: View {
             .padding(12)
         }
         .frame(width: 150, height: 150)
+        .shadow(color: .black.opacity(0.16), radius: 12, x: 0, y: 8)
     }
 }
 
@@ -1949,8 +2080,18 @@ struct MemoryCardView: View {
             )
 
             if let detail = metricsStore.memoryDetail {
-                HStack(spacing: 16) {
-                    RingGaugeView(value: detail.pressurePercent, label: "PRESSURE", colors: [.blue, .cyan, .blue])
+                HStack(alignment: .center, spacing: 18) {
+                    Spacer(minLength: 0)
+
+                    RingGaugeView(
+                        value: detail.pressurePercent,
+                        label: "PRESSURE",
+                        colors: [.blue, .cyan, .blue],
+                        size: 126,
+                        lineWidth: 12,
+                        valueFontSize: 24
+                    )
+
                     MemorySummaryRingView(
                         appBytes: detail.appBytes,
                         wiredBytes: detail.wiredBytes,
@@ -1958,7 +2099,12 @@ struct MemoryCardView: View {
                         freeBytes: detail.freeBytes,
                         usedPercent: detail.usedPercent
                     )
+
+                    Spacer(minLength: 0)
                 }
+                .padding(.top, 2)
+
+                MemoryLegendPanel(detail: detail)
             }
 
             if let detail = metricsStore.memoryDetail {
@@ -1980,16 +2126,6 @@ struct MemoryCardView: View {
                         )
                         .frame(height: 120)
                     }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        MemoryLegendRow(color: .blue, title: "App", value: formatBytes(detail.appBytes))
-                        MemoryLegendRow(color: .orange, title: "Wired", value: formatBytes(detail.wiredBytes))
-                        MemoryLegendRow(color: .yellow, title: "Compressed", value: formatBytes(detail.compressedBytes))
-                        MemoryLegendRow(color: .gray, title: "Free", value: formatBytes(detail.freeBytes))
-                    }
-                    .padding(10)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(10)
                 }
 
                 SectionHeader(title: "PROCESSES")
@@ -2051,18 +2187,69 @@ struct MemoryLegendRow: View {
     let value: String
 
     var body: some View {
-        HStack {
+        HStack(spacing: 10) {
             Circle()
                 .fill(color)
-                .frame(width: 8, height: 8)
+                .frame(width: 9, height: 9)
+                .shadow(color: color.opacity(0.28), radius: 4)
+
             Text(title)
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.75))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.82))
+
             Spacer()
+
             Text(value)
-                .font(.caption)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
         }
+        .padding(.vertical, 2)
+    }
+}
+
+struct MemoryLegendPanel: View {
+    let detail: MemoryDetail
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("MEMORY BREAKDOWN")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+                .tracking(1.2)
+
+            VStack(spacing: 6) {
+                MemoryLegendRow(color: .blue, title: "App", value: formatBytes(detail.appBytes))
+                MemoryLegendRow(color: .orange, title: "Wired", value: formatBytes(detail.wiredBytes))
+                MemoryLegendRow(color: .yellow, title: "Compressed", value: formatBytes(detail.compressedBytes))
+                MemoryLegendRow(color: .gray, title: "Free", value: formatBytes(detail.freeBytes))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.06), Color.white.opacity(0.03)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 7)
+    }
+
+    private func formatBytes(_ value: UInt64) -> String {
+        let gb = Double(value) / 1_073_741_824
+        if gb >= 1 {
+            return String(format: "%.1f GB", gb)
+        }
+        let mb = Double(value) / 1_048_576
+        return String(format: "%.0f MB", mb)
     }
 }
 
@@ -2072,30 +2259,59 @@ struct MemorySummaryRingView: View {
     let compressedBytes: UInt64
     let freeBytes: UInt64
     let usedPercent: Double
+    private let ringWidth: CGFloat = 10
+    private let segmentGap: Double = 0.014
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.18), lineWidth: 10)
+                .stroke(Color.white.opacity(0.12), lineWidth: ringWidth)
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.cyan.opacity(0.18), Color.clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 42
+                    )
+                )
 
             ForEach(segments.indices, id: \.self) { index in
                 let segment = segments[index]
                 Circle()
-                    .trim(from: segment.start, to: segment.end)
-                    .stroke(segment.color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .trim(from: adjustedStart(for: segment), to: adjustedEnd(for: segment))
+                    .stroke(segment.color, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    .shadow(color: segment.color.opacity(0.18), radius: 4)
             }
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.03)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .padding(ringWidth + 6)
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                        .padding(ringWidth + 6)
+                )
 
             VStack(spacing: 2) {
                 Text(String(format: "%.0f%%", usedPercent))
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text("MEMORY")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.6))
+                Text("USED")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .tracking(1.1)
             }
         }
-        .frame(width: 78, height: 78)
+        .frame(width: 132, height: 132)
+        .shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 7)
     }
 
     private var segments: [Segment] {
@@ -2116,6 +2332,14 @@ struct MemorySummaryRingView: View {
             start = end
         }
         return result
+    }
+
+    private func adjustedStart(for segment: Segment) -> Double {
+        min(segment.start + segmentGap / 2, segment.end)
+    }
+
+    private func adjustedEnd(for segment: Segment) -> Double {
+        max(segment.end - segmentGap / 2, segment.start)
     }
 
     private struct Segment {
