@@ -274,7 +274,7 @@ final class StatusBarController: NSObject {
 
     private func formatTemperature(_ value: Double?, fallback: String = "--") -> String {
         guard let value else { return fallback }
-        return String(format: "%.0f°", value)
+        return String(format: "%.0f°C", value)
     }
 
     private func formatRate(_ value: Double?, fallback: String = "--") -> String {

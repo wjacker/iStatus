@@ -15,6 +15,30 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     static var visibleCases: [DashboardSection] {
         [.overview, .cpu, .memory, .disk, .network, .temperature, .battery]
     }
+
+    var icon: String {
+        switch self {
+        case .overview: return "square.grid.2x2.fill"
+        case .cpu: return "cpu.fill"
+        case .memory: return "memorychip.fill"
+        case .disk: return "internaldrive.fill"
+        case .network: return "wave.3.right"
+        case .temperature: return "thermometer.medium"
+        case .battery: return "battery.100percent"
+        }
+    }
+
+    var accent: Color {
+        switch self {
+        case .overview: return Color(red: 0.52, green: 0.76, blue: 1.0)
+        case .cpu: return .pink
+        case .memory: return .cyan
+        case .disk: return .blue
+        case .network: return .mint
+        case .temperature: return .orange
+        case .battery: return .green
+        }
+    }
 }
 
 enum TimeRange: String, CaseIterable, Identifiable {
@@ -52,15 +76,19 @@ struct DashboardView: View {
     @State private var selectedSection: DashboardSection = .overview
     @State private var selectedRange: TimeRange = .min10
     @State private var refreshTick = Date()
+    @State private var isSidebarCollapsed = false
 
     var body: some View {
         let _ = refreshTick
-        HStack(spacing: 0) {
-            sidebar
-            Divider()
-            content
+        ZStack {
+            dashboardBackground
+                .ignoresSafeArea()
+
+            HStack(spacing: 0) {
+                sidebar
+                content
+            }
         }
-        .background(LinearGradient(colors: [Color("BackgroundTop"), Color("BackgroundBottom")], startPoint: .top, endPoint: .bottom))
         .onReceive(metricsStore.$sampleTick) { tick in
             refreshTick = tick
         }
@@ -68,32 +96,137 @@ struct DashboardView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("iStatus")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+            Group {
+                if isSidebarCollapsed {
+                    VStack(spacing: 12) {
+                        Image(systemName: "waveform.path.ecg")
+                            .font(.system(size: 22, weight: .black))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+
+                        Button {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                isSidebarCollapsed.toggle()
+                            }
+                        } label: {
+                            Image(systemName: "sidebar.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.82))
+                                .frame(width: 28, height: 28)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.white.opacity(0.035))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            )
+                    )
+                } else {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("iStatus")
+                                .font(.system(size: 28, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+
+                            Text("Beautiful live system telemetry for your Mac.")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.68))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Button {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                isSidebarCollapsed.toggle()
+                            }
+                        } label: {
+                            Image(systemName: "sidebar.left")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.82))
+                                .frame(width: 28, height: 28)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(18)
+                    .dashboardPanel(fillOpacity: 0.18, strokeOpacity: 0.18)
+                }
+            }
 
             ForEach(DashboardSection.visibleCases) { section in
                 Button {
                     selectedSection = section
                 } label: {
-                    HStack {
-                        Text(section.rawValue)
-                            .font(.system(.callout, design: .rounded))
-                        Spacer()
+                    HStack(spacing: 12) {
+                        Image(systemName: section.icon)
+                            .font(.system(size: 14, weight: .bold))
+                            .frame(width: 18)
+                            .foregroundStyle(selectedSection == section ? Color.black.opacity(0.82) : section.accent)
+
+                        if !isSidebarCollapsed {
+                            Text(section.rawValue)
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            Spacer()
+                        }
+
+                        if selectedSection == section && !isSidebarCollapsed {
+                            Circle()
+                                .fill(Color.black.opacity(0.7))
+                                .frame(width: 7, height: 7)
+                        }
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 10)
-                    .background(selectedSection == section ? Color.white.opacity(0.12) : Color.clear)
-                    .cornerRadius(8)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: isSidebarCollapsed ? .center : .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(
+                                selectedSection == section
+                                ? AnyShapeStyle(
+                                    LinearGradient(
+                                        colors: [section.accent.opacity(0.92), Color.white.opacity(0.88)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                : AnyShapeStyle(Color.white.opacity(0.035))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.white.opacity(selectedSection == section ? 0.08 : 0.1), lineWidth: 1)
+                            )
+                    )
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.white)
+                .foregroundStyle(selectedSection == section ? Color.black.opacity(0.84) : .white)
+                .help(section.rawValue)
             }
 
             Spacer()
+
+            if !isSidebarCollapsed {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(selectedSection.accent)
+                        .frame(width: 9, height: 9)
+
+                    Text("Live sampling every 2 seconds")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
         }
-        .padding(18)
-        .frame(width: 180)
+        .padding(24)
+        .frame(width: isSidebarCollapsed ? 104 : 228)
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isSidebarCollapsed)
     }
 
     private var content: some View {
@@ -108,32 +241,47 @@ struct DashboardView: View {
                     sectionDetail
                 }
             }
-            .padding(22)
+            .frame(maxWidth: 1220, alignment: .leading)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 26)
         }
     }
 
     private var header: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 10) {
                     if let menuBarItem = selectedSection.menuBarItem {
                         MenuBarVisibilityButton(item: menuBarItem, style: .header)
                     }
+                    Label("Live", systemImage: "dot.radiowaves.left.and.right")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(selectedSection.accent.opacity(0.2))
+                        .overlay(
+                            Capsule()
+                                .stroke(selectedSection.accent.opacity(0.45), lineWidth: 1)
+                        )
+                        .clipShape(Capsule())
+                        .foregroundStyle(selectedSection.accent)
                     Text(selectedSection.rawValue)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 34, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                 }
-                Text("Rolling history with 2s sampling")
+                Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.white.opacity(0.74))
             }
             Spacer()
             TimeRangePicker(selected: $selectedRange)
         }
+        .padding(22)
+        .dashboardPanel(fillOpacity: 0.13, strokeOpacity: 0.14)
     }
 
     private var quickStats: some View {
-        HStack(spacing: 12) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 14)], spacing: 14) {
             StatPill(title: "CPU", value: metricsStore.latestValue(.cpuUsage), unit: "%", accent: .pink)
             StatPill(title: "MEM", value: metricsStore.latestValue(.memoryUsedPercent), unit: "%", accent: .cyan)
             StatPill(
@@ -358,27 +506,38 @@ struct StatPill: View {
     var formattedValueOverride: String? = nil
 
     var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(accent)
-                .frame(width: 8, height: 8)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.8))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .tracking(1.1)
+                Spacer()
+                Circle()
+                    .fill(accent)
+                    .frame(width: 9, height: 9)
+                    .shadow(color: accent.opacity(0.7), radius: 6)
+            }
+
             Text(formattedValue)
-                .font(.system(.callout, design: .rounded))
+                .font(.system(size: 26, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
-        .background(
-            Capsule()
-                .fill(Color.white.opacity(0.08))
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [accent.opacity(0.9), accent.opacity(0.18)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
                 )
-        )
+                .frame(height: 6)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 108, alignment: .leading)
+        .dashboardPanel(fillOpacity: 0.13, strokeOpacity: 0.12)
     }
 
     private var formattedValue: String {
@@ -401,18 +560,29 @@ struct TimeRangePicker: View {
                 } label: {
                     Text(range.rawValue)
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(selected == range ? Color.black : Color.white)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 10)
-                        .background(selected == range ? Color.white : Color.white.opacity(0.12))
-                        .cornerRadius(8)
+                        .foregroundStyle(selected == range ? Color.black.opacity(0.84) : Color.white.opacity(0.88))
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(
+                                    selected == range
+                                    ? AnyShapeStyle(
+                                        LinearGradient(
+                                            colors: [Color.white, Color.white.opacity(0.82)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    : AnyShapeStyle(Color.white.opacity(0.06))
+                                )
+                        )
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(6)
-        .background(Color.white.opacity(0.06))
-        .cornerRadius(10)
+        .dashboardPanel(fillOpacity: 0.1, strokeOpacity: 0.12, cornerRadius: 14, shadow: false)
     }
 }
 
@@ -429,18 +599,35 @@ struct MetricCard<Footer: View>: View {
     @ViewBuilder let footer: () -> Footer
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.white)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 21, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("Recent activity")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
                 Spacer()
-                Text(formattedValue)
-                    .font(.system(.title3, design: .rounded))
-                    .foregroundStyle(accent)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Circle()
+                        .fill(accent)
+                        .frame(width: 10, height: 10)
+                        .shadow(color: accent.opacity(0.8), radius: 8)
+                    Text(formattedValue)
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                }
             }
 
-            MiniChartView(samples: series, accent: accent, range: range, bucketInterval: bucketInterval)
+            MiniChartView(
+                samples: series,
+                accent: accent,
+                range: range,
+                bucketInterval: bucketInterval,
+                valueFormatter: tooltipFormatter
+            )
                 .frame(height: 110)
 
             footer()
@@ -451,16 +638,8 @@ struct MetricCard<Footer: View>: View {
                     .foregroundStyle(.white.opacity(0.7))
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color("CardBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
-        )
+        .padding(20)
+        .dashboardCardBackground()
     }
 
     private var formattedValue: String {
@@ -469,6 +648,25 @@ struct MetricCard<Footer: View>: View {
         }
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, unit)
+    }
+
+    private var tooltipFormatter: (Double?) -> String {
+        { value in
+            if unit == "KB/s" {
+                return formatNetworkRate(kilobytesPerSecond: value)
+            }
+
+            guard let value else { return "--" }
+
+            switch unit {
+            case "%":
+                return String(format: "%.0f%%", value)
+            case "°C":
+                return String(format: "%.0f°C", value)
+            default:
+                return String(format: "%.1f%@", value, unit)
+            }
+        }
     }
 }
 
@@ -512,19 +710,26 @@ struct SubMetricChartRow: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .tracking(1)
                 Text(formattedValue)
-                    .font(.system(.callout, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }
             .frame(width: 56, alignment: .leading)
-            MiniChartView(samples: series, accent: accent, range: range, bucketInterval: bucketInterval)
+            MiniChartView(
+                samples: series,
+                accent: accent,
+                range: range,
+                bucketInterval: bucketInterval,
+                valueFormatter: tooltipFormatter
+            )
                 .frame(height: 36)
         }
-        .padding(.vertical, 4)
-        .background(Color.white.opacity(0.04))
-        .cornerRadius(8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .dashboardPanel(fillOpacity: 0.07, strokeOpacity: 0.08, cornerRadius: 12, shadow: false)
     }
 
     private var formattedValue: String {
@@ -534,6 +739,25 @@ struct SubMetricChartRow: View {
         guard let value else { return "--" }
         return String(format: "%.0f%@", value, unit)
     }
+
+    private var tooltipFormatter: (Double?) -> String {
+        { value in
+            if unit == "KB/s" {
+                return formatNetworkRate(kilobytesPerSecond: value)
+            }
+
+            guard let value else { return "--" }
+
+            switch unit {
+            case "%":
+                return String(format: "%.0f%%", value)
+            case "°C":
+                return String(format: "%.0f°C", value)
+            default:
+                return String(format: "%.1f%@", value, unit)
+            }
+        }
+    }
 }
 
 struct SectionHeader: View {
@@ -541,9 +765,10 @@ struct SectionHeader: View {
 
     var body: some View {
         Text(title)
-            .font(.caption2)
-            .foregroundStyle(.white.opacity(0.7))
-            .padding(.top, 6)
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .foregroundStyle(.white.opacity(0.62))
+            .tracking(1.2)
+            .padding(.top, 8)
     }
 }
 
@@ -554,6 +779,10 @@ struct IPListRow: View {
         Text(text)
             .font(.system(.callout, design: .rounded))
             .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .dashboardPanel(fillOpacity: 0.06, strokeOpacity: 0.08, cornerRadius: 12, shadow: false)
     }
 }
 
@@ -588,6 +817,9 @@ struct ProcessRow: View {
         }
         .font(.system(.callout, design: .rounded))
         .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .dashboardPanel(fillOpacity: 0.05, strokeOpacity: 0.06, cornerRadius: 12, shadow: false)
     }
 
     private var appDisplayName: String {
@@ -617,6 +849,9 @@ struct ProcessMemoryRow: View {
         }
         .font(.system(.callout, design: .rounded))
         .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .dashboardPanel(fillOpacity: 0.05, strokeOpacity: 0.06, cornerRadius: 12, shadow: false)
     }
 
     private var appDisplayName: String {
@@ -708,7 +943,10 @@ struct DiskCardView: View {
                     DiskUsageRingView(volume: detail.volume)
                     DiskCapacityLegend(volume: detail.volume)
                 } else {
-                    placeholderPanel(title: "Disk usage")
+                    placeholderPanel(
+                        title: "Disk details are loading",
+                        message: "Capacity and volume breakdown will appear after the first disk sample arrives."
+                    )
                 }
             }
 
@@ -732,51 +970,49 @@ struct DiskCardView: View {
                 )
                 .frame(height: 110)
 
-                HStack {
-                    Text("Read \(peakLabel(for: readSeries))")
-                    Spacer()
-                    Text("Write \(peakLabel(for: writeSeries))")
+                if readSeries.isEmpty && writeSeries.isEmpty {
+                    InlineEmptyState(
+                        title: "No disk transfer history yet",
+                        message: "Recent read and write activity will show up here automatically."
+                    )
+                } else {
+                    HStack {
+                        Text("Read \(peakLabel(for: readSeries))")
+                        Spacer()
+                        Text("Write \(peakLabel(for: writeSeries))")
+                    }
+                    .font(.system(.callout, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
                 }
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(.white.opacity(0.85))
             }
             .padding(14)
             .background(Color.white.opacity(0.05))
             .cornerRadius(14)
 
             SectionHeader(title: "PROCESSES")
-            ProcessDiskHeaderRow()
             if metricsStore.diskProcesses.isEmpty {
-                Text("Waiting for disk activity...")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.65))
+                EmptyListState(
+                    title: "No active disk processes",
+                    message: "Per-process reads and writes appear once apps start moving data."
+                )
             } else {
+                ProcessDiskHeaderRow()
                 ForEach(metricsStore.diskProcesses) { proc in
                     ProcessDiskRow(stat: proc)
                 }
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color("CardBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
-        )
+        .dashboardCardBackground()
     }
 
-    private func placeholderPanel(title: String) -> some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(Color.white.opacity(0.05))
-            .overlay(
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.65))
-            )
-            .frame(height: 120)
+    private func placeholderPanel(title: String, message: String) -> some View {
+        EmptyStatePanel(
+            icon: "internaldrive.fill",
+            title: title,
+            message: message,
+            minHeight: 120
+        )
     }
 
     private func peakLabel(for series: [MetricSample]) -> String {
@@ -958,9 +1194,9 @@ struct ProcessDiskHeaderRow: View {
         HStack {
             Text("Process")
             Spacer()
-            Text("R")
+            Text("Read/s")
                 .frame(width: 72, alignment: .trailing)
-            Text("W")
+            Text("Write/s")
                 .frame(width: 72, alignment: .trailing)
         }
         .font(.caption2)
@@ -984,6 +1220,9 @@ struct ProcessDiskRow: View {
         }
         .font(.system(.callout, design: .rounded))
         .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .dashboardPanel(fillOpacity: 0.05, strokeOpacity: 0.06, cornerRadius: 12, shadow: false)
     }
 
     private var appDisplayName: String {
@@ -994,7 +1233,7 @@ struct ProcessDiskRow: View {
     }
 
     private func format(_ value: Double) -> String {
-        ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .binary)
+        ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .binary) + "/s"
     }
 }
 
@@ -1006,54 +1245,54 @@ struct BatteryCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(spacing: 14) {
-                    BatteryStatSection(title: "POWER ADAPTER", rows: powerAdapterRows)
-                    BatteryStatSection(title: "BATTERY", rows: batteryRows)
-                    BatteryStatSection(title: "HEALTH", rows: healthRows)
+            if metricsStore.batteryDetail == nil {
+                EmptyStatePanel(
+                    icon: "battery.100percent",
+                    title: "Battery telemetry unavailable",
+                    message: "This Mac may still be gathering battery details, or the current hardware does not expose them."
+                )
+            } else {
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(spacing: 14) {
+                        BatteryStatSection(title: "POWER ADAPTER", rows: powerAdapterRows)
+                        BatteryStatSection(title: "BATTERY", rows: batteryRows)
+                        BatteryStatSection(title: "HEALTH", rows: healthRows)
 
-                    if let detail = metricsStore.batteryDetail, !detail.cellVoltages.isEmpty {
-                        BatteryStatSection(
-                            title: "CELLS",
-                            rows: detail.cellVoltages.enumerated().map { index, voltage in
-                                BatteryStatRow(title: "Cell \(index + 1)", value: formatVoltage(voltage))
-                            }
-                        )
+                        if let detail = metricsStore.batteryDetail, !detail.cellVoltages.isEmpty {
+                            BatteryStatSection(
+                                title: "CELLS",
+                                rows: detail.cellVoltages.enumerated().map { index, voltage in
+                                    BatteryStatRow(title: "Cell \(index + 1)", value: formatVoltage(voltage))
+                                }
+                            )
+                        }
                     }
+                    .frame(maxWidth: 320, alignment: .top)
+
+                    VStack(spacing: 14) {
+                        BatteryRingPanel(
+                            percent: metricsStore.batteryDetail?.percent,
+                            healthPercent: metricsStore.batteryDetail?.healthPercent
+                        )
+
+                        BatteryLevelPanel(
+                            samples: batterySeries,
+                            isCharging: metricsStore.batteryDetail?.isCharging ?? false,
+                            isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
+                            range: range,
+                            bucketInterval: bucketInterval
+                        )
+
+                        BatteryModeRow(mode: batteryModeText)
+
+                        BatterySignificantEnergyRow(app: metricsStore.significantEnergyApp)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: 320, alignment: .top)
-
-                VStack(spacing: 14) {
-                    BatteryRingPanel(
-                        percent: metricsStore.batteryDetail?.percent,
-                        healthPercent: metricsStore.batteryDetail?.healthPercent
-                    )
-
-                    BatteryLevelPanel(
-                        samples: batterySeries,
-                        isCharging: metricsStore.batteryDetail?.isCharging ?? false,
-                        isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
-                        range: range,
-                        bucketInterval: bucketInterval
-                    )
-
-                    BatteryModeRow(mode: batteryModeText)
-
-                    BatterySignificantEnergyRow(app: metricsStore.significantEnergyApp)
-                }
-                .frame(maxWidth: .infinity)
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color("CardBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
-        )
+        .dashboardCardBackground()
     }
 
     private var powerAdapterRows: [BatteryStatRow] {
@@ -1105,7 +1344,7 @@ struct BatteryCardView: View {
 
     private func formatTemperature(_ value: Double?) -> String {
         guard let value else { return "--" }
-        return String(format: "%.0f°", value)
+        return String(format: "%.0f°C", value)
     }
 
     private func formatCapacity(_ value: Int?) -> String {
@@ -1165,8 +1404,26 @@ struct CPUTemperatureCardView: View {
                 TemperatureHeroRing(value: metricsStore.latestValue(.cpuTemperature))
 
                 VStack(alignment: .leading, spacing: 12) {
-                    MiniChartView(samples: temperatureSeries, accent: .orange, range: range, bucketInterval: bucketInterval)
-                        .frame(height: 92)
+                    if temperatureSeries.isEmpty {
+                        EmptyStatePanel(
+                            icon: "thermometer.medium",
+                            title: "No temperature history yet",
+                            message: "Thermal samples will appear here as soon as the sensor stream updates.",
+                            minHeight: 92
+                        )
+                    } else {
+                        MiniChartView(
+                            samples: temperatureSeries,
+                            accent: .orange,
+                            range: range,
+                            bucketInterval: bucketInterval,
+                            valueFormatter: { value in
+                                guard let value else { return "--" }
+                                return String(format: "%.0f°C", value)
+                            }
+                        )
+                            .frame(height: 92)
+                    }
 
                     HStack(spacing: 12) {
                         TemperatureSummaryPill(title: "CPU", value: formatTemperature(metricsStore.latestValue(.cpuTemperature)))
@@ -1182,15 +1439,7 @@ struct CPUTemperatureCardView: View {
             BatteryStatSection(title: "FANS", rows: fanRows.isEmpty ? unsupportedRows : fanRows)
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color("CardBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
-        )
+        .dashboardCardBackground()
     }
 
     private var temperatureRows: [BatteryStatRow] {
@@ -1243,7 +1492,7 @@ struct CPUTemperatureCardView: View {
 
     private func formatTemperature(_ value: Double?) -> String {
         guard let value else { return "--" }
-        return String(format: "%.0f°", value)
+        return String(format: "%.0f°C", value)
     }
 
     private func formatRPM(_ value: Double?) -> String {
@@ -1273,7 +1522,7 @@ private struct TemperatureHeroRing: View {
                 .rotationEffect(.degrees(-90))
 
             VStack(spacing: 2) {
-                Text(value.map { String(format: "%.0f°", $0) } ?? "--")
+                Text(value.map { String(format: "%.0f°C", $0) } ?? "--")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text("CPU TEMP")
@@ -1352,7 +1601,7 @@ struct BatteryLargeRingView: View {
                         .foregroundStyle(.white)
                 }
                 Text(String(format: "%.0f%%", value))
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text(title)
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -1373,8 +1622,17 @@ struct BatteryLevelPanel: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            BatteryLevelBarsView(samples: samples, range: range, bucketInterval: bucketInterval)
-                .frame(height: 110)
+            if samples.isEmpty {
+                EmptyStatePanel(
+                    icon: "chart.bar.fill",
+                    title: "No battery history yet",
+                    message: "Charge level history will fill in after a few fresh samples.",
+                    minHeight: 110
+                )
+            } else {
+                BatteryLevelBarsView(samples: samples, range: range, bucketInterval: bucketInterval)
+                    .frame(height: 110)
+            }
 
             RoundedRectangle(cornerRadius: 5)
                 .fill(LinearGradient(colors: [.blue, .cyan], startPoint: .leading, endPoint: .trailing))
@@ -1519,17 +1777,26 @@ struct MemoryCardView: View {
                 }
             }
 
-            HStack(alignment: .top, spacing: 12) {
-                MemoryStackChartView(
-                    appSamples: appSeries,
-                    wiredSamples: wiredSeries,
-                    compressedSamples: compressedSeries,
-                    range: range,
-                    bucketInterval: bucketInterval
-                )
-                .frame(height: 120)
+            if let detail = metricsStore.memoryDetail {
+                HStack(alignment: .top, spacing: 12) {
+                    if appSeries.isEmpty && wiredSeries.isEmpty && compressedSeries.isEmpty {
+                        EmptyStatePanel(
+                            icon: "memorychip.fill",
+                            title: "No memory history yet",
+                            message: "Usage composition will appear after the first rolling samples are collected.",
+                            minHeight: 120
+                        )
+                    } else {
+                        MemoryStackChartView(
+                            appSamples: appSeries,
+                            wiredSamples: wiredSeries,
+                            compressedSamples: compressedSeries,
+                            range: range,
+                            bucketInterval: bucketInterval
+                        )
+                        .frame(height: 120)
+                    }
 
-                if let detail = metricsStore.memoryDetail {
                     VStack(alignment: .leading, spacing: 8) {
                         MemoryLegendRow(color: .blue, title: "App", value: formatBytes(detail.appBytes))
                         MemoryLegendRow(color: .orange, title: "Wired", value: formatBytes(detail.wiredBytes))
@@ -1540,12 +1807,17 @@ struct MemoryCardView: View {
                     .background(Color.white.opacity(0.06))
                     .cornerRadius(10)
                 }
-            }
 
-            if let detail = metricsStore.memoryDetail {
                 SectionHeader(title: "PROCESSES")
-                ForEach(metricsStore.memoryProcesses) { proc in
-                    ProcessMemoryRow(stat: proc)
+                if metricsStore.memoryProcesses.isEmpty {
+                    EmptyListState(
+                        title: "No heavy memory processes yet",
+                        message: "The largest memory users will appear here once process details are available."
+                    )
+                } else {
+                    ForEach(metricsStore.memoryProcesses) { proc in
+                        ProcessMemoryRow(stat: proc)
+                    }
                 }
 
                 HStack {
@@ -1562,18 +1834,16 @@ struct MemoryCardView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.75))
+            } else {
+                EmptyStatePanel(
+                    icon: "memorychip.fill",
+                    title: "Memory details are loading",
+                    message: "Pressure, composition, swap, and process details will appear once sampling completes."
+                )
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color("CardBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
-        )
+        .dashboardCardBackground()
     }
 
     private var formattedValue: String {
@@ -1719,12 +1989,22 @@ struct StatusItemDetailPopoverView: View {
         .padding(12)
         .frame(width: popupWidth)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(LinearGradient(colors: [Color("BackgroundTop"), Color("BackgroundBottom")], startPoint: .top, endPoint: .bottom))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.07, green: 0.11, blue: 0.19),
+                            Color(red: 0.03, green: 0.05, blue: 0.11)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.32), radius: 22, x: 0, y: 18)
         )
         .onReceive(metricsStore.$sampleTick) { tick in
             refreshTick = tick
@@ -1819,13 +2099,20 @@ struct StatusItemDetailPopoverView: View {
                 )
                 .frame(height: 110)
 
-                HStack {
-                    Text("Upload \(peakLabel(for: filteredSeries(.networkUpKBps)))")
-                    Spacer()
-                    Text("Download \(peakLabel(for: filteredSeries(.networkDownKBps)))")
+                if filteredSeries(.networkUpKBps).isEmpty && filteredSeries(.networkDownKBps).isEmpty {
+                    InlineEmptyState(
+                        title: "No network history yet",
+                        message: "Upload and download activity will appear here once traffic is observed."
+                    )
+                } else {
+                    HStack {
+                        Text("Upload \(peakLabel(for: filteredSeries(.networkUpKBps)))")
+                        Spacer()
+                        Text("Download \(peakLabel(for: filteredSeries(.networkDownKBps)))")
+                    }
+                    .font(.system(.callout, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
                 }
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(.white.opacity(0.85))
             }
             .padding(14)
             .background(Color.white.opacity(0.05))
@@ -1843,34 +2130,47 @@ struct StatusItemDetailPopoverView: View {
             }
 
             SectionHeader(title: "PUBLIC IP ADDRESSES")
-            HStack {
-                Text(metricsStore.ipInfo.publicIPv4 ?? "--")
-                    .font(.system(.title3, design: .rounded))
-                    .foregroundStyle(.white)
-                Spacer()
+            if let publicIPv4 = metricsStore.ipInfo.publicIPv4, !publicIPv4.isEmpty {
+                HStack {
+                    Text(publicIPv4)
+                        .font(.system(.title3, design: .rounded))
+                        .foregroundStyle(.white)
+                    Spacer()
+                }
+            } else {
+                InlineEmptyState(
+                    title: "Public IP not available",
+                    message: "A public address will show here when the network probe resolves it."
+                )
             }
 
             SectionHeader(title: "IP ADDRESSES")
-            ForEach(metricsStore.ipInfo.localIPv4, id: \.self) { ip in
-                IPListRow(text: ip)
+            if metricsStore.ipInfo.localIPv4.isEmpty {
+                EmptyListState(
+                    title: "No local addresses detected",
+                    message: "Interface addresses will appear after the active network service is identified."
+                )
+            } else {
+                ForEach(metricsStore.ipInfo.localIPv4, id: \.self) { ip in
+                    IPListRow(text: ip)
+                }
             }
 
             SectionHeader(title: "PROCESSES")
-            ProcessHeaderRow()
-            ForEach(metricsStore.networkProcesses) { proc in
-                ProcessRow(stat: proc)
+            if metricsStore.networkProcesses.isEmpty {
+                EmptyListState(
+                    title: "No network-heavy processes",
+                    message: "Per-process traffic appears here when apps start uploading or downloading."
+                )
+            } else {
+                ProcessHeaderRow()
+                ForEach(metricsStore.networkProcesses) { proc in
+                    ProcessRow(stat: proc)
+                }
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color("CardBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("CardBorder"), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 8)
-        )
+        .dashboardCardBackground()
     }
 
     private var footer: some View {
@@ -1981,4 +2281,140 @@ private func formatNetworkRate(bytesPerSecond value: Double?, fallback: String =
     formatter.isAdaptive = true
     formatter.zeroPadsFractionDigits = false
     return formatter.string(fromByteCount: Int64(value)) + "/s"
+}
+
+private extension View {
+    func dashboardPanel(
+        fillOpacity: Double = 0.12,
+        strokeOpacity: Double = 0.12,
+        cornerRadius: CGFloat = 18,
+        shadow: Bool = true
+    ) -> some View {
+        background(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.white.opacity(fillOpacity))
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(Color.white.opacity(strokeOpacity), lineWidth: 1)
+                )
+                .shadow(color: shadow ? .black.opacity(0.18) : .clear, radius: shadow ? 16 : 0, x: 0, y: shadow ? 10 : 0)
+        )
+    }
+
+    func dashboardCardBackground() -> some View {
+        background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.12),
+                            Color.white.opacity(0.06)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.24), radius: 24, x: 0, y: 18)
+        )
+    }
+}
+
+private struct EmptyStatePanel: View {
+    let icon: String
+    let title: String
+    let message: String
+    var minHeight: CGFloat = 148
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.82))
+
+            Text(title)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.68))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, minHeight: minHeight)
+        .dashboardPanel(fillOpacity: 0.07, strokeOpacity: 0.09, cornerRadius: 16, shadow: false)
+    }
+}
+
+private struct EmptyListState: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        EmptyStatePanel(
+            icon: "tray.fill",
+            title: title,
+            message: message,
+            minHeight: 84
+        )
+    }
+}
+
+private struct InlineEmptyState: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.88))
+            Text(message)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.64))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .dashboardPanel(fillOpacity: 0.05, strokeOpacity: 0.07, cornerRadius: 12, shadow: false)
+    }
+}
+
+private extension DashboardView {
+    var dashboardBackground: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.04, green: 0.07, blue: 0.14),
+                    Color(red: 0.02, green: 0.04, blue: 0.09),
+                    Color(red: 0.01, green: 0.02, blue: 0.05)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Circle()
+                .fill(selectedSection.accent.opacity(0.24))
+                .blur(radius: 110)
+                .frame(width: 320, height: 320)
+                .offset(x: -440, y: -250)
+
+            Circle()
+                .fill(Color.cyan.opacity(0.16))
+                .blur(radius: 140)
+                .frame(width: 380, height: 380)
+                .offset(x: 320, y: -180)
+
+            Circle()
+                .fill(Color.pink.opacity(0.14))
+                .blur(radius: 150)
+                .frame(width: 360, height: 360)
+                .offset(x: 440, y: 280)
+        }
+    }
 }
