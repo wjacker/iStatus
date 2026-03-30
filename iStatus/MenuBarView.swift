@@ -114,17 +114,17 @@ struct MenuBarView: View {
     let onQuit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("iStatus")
-                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .font(.system(size: 19, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                     Spacer()
                     Label("Live", systemImage: "dot.radiowaves.left.and.right")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
                         .background(Color.mint.opacity(0.2))
                         .overlay(
                             Capsule()
@@ -135,10 +135,10 @@ struct MenuBarView: View {
                 }
 
                 Text("A cleaner snapshot of your Mac, right from the menu bar.")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.72))
             }
-            .padding(16)
+            .padding(14)
             .menuPanel(fillOpacity: 0.14, strokeOpacity: 0.12)
 
             HStack(spacing: 10) {
@@ -158,11 +158,11 @@ struct MenuBarView: View {
             }
             .buttonStyle(MenuBarActionButtonStyle())
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Quick Metrics")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.62))
-                    .tracking(1.2)
+                    .tracking(1)
 
                 MenuMetricRow(title: "CPU", value: metricsStore.latestValue(.cpuUsage), accent: .pink)
                 MenuMetricRow(title: "Memory", value: metricsStore.latestValue(.memoryUsedPercent), accent: .cyan)
@@ -170,7 +170,7 @@ struct MenuBarView: View {
                 MenuMetricRow(title: "Network", value: metricsStore.latestValue(.networkTotalKBps), suffix: "KB/s", accent: .mint)
                 MenuMetricRow(title: "Battery", value: metricsStore.latestValue(.batteryPercent), accent: .green)
             }
-            .padding(16)
+            .padding(14)
             .menuPanel(fillOpacity: 0.1, strokeOpacity: 0.1)
 
             Button {
@@ -181,8 +181,8 @@ struct MenuBarView: View {
             }
             .buttonStyle(MenuBarActionButtonStyle(tint: Color.red.opacity(0.88)))
         }
-        .padding(16)
-        .frame(width: 260)
+        .padding(14)
+        .frame(width: 248)
         .background(
             LinearGradient(
                 colors: [
@@ -199,8 +199,8 @@ struct MenuBarView: View {
 struct MenuBarStatusView: View {
     var body: some View {
         Image(systemName: "waveform.path.ecg")
-            .font(.system(size: 12, weight: .semibold))
-            .frame(width: 18, height: 14)
+            .font(.system(size: 11, weight: .semibold))
+            .frame(width: 16, height: 12)
     }
 }
 
@@ -219,7 +219,7 @@ struct StatusBarStripView: View {
     var showsBackground: Bool = true
 
     var body: some View {
-        HStack(alignment: .center, spacing: useCompactPadding ? 10 : 12) {
+        HStack(alignment: .center, spacing: useCompactPadding ? 8 : 10) {
             ForEach(segments) { segment in
                 switch segment.kind {
                 case let .network(up, down):
@@ -229,8 +229,8 @@ struct StatusBarStripView: View {
                 }
             }
         }
-        .padding(.horizontal, useCompactPadding ? 4 : 10)
-        .padding(.vertical, useCompactPadding ? 1 : 6)
+        .padding(.horizontal, useCompactPadding ? 4 : 8)
+        .padding(.vertical, useCompactPadding ? 1 : 5)
         .background(backgroundShape)
     }
 
@@ -268,10 +268,10 @@ private struct StripValueLine: View {
     var body: some View {
         HStack(spacing: 4) {
             Text(symbol)
-                .font(.system(size: 8, weight: .bold, design: .rounded))
+                .font(.system(size: 7, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.92))
             Text(value)
-                .font(.system(size: 8, weight: .semibold, design: .rounded))
+                .font(.system(size: 7, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
                 .fixedSize()
         }
@@ -285,11 +285,11 @@ private struct MetricStripBlock: View {
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
             Text(title)
-                .font(.system(size: 7, weight: .bold, design: .rounded))
+                .font(.system(size: 6, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.75))
                 .tracking(0.2)
             Text(value)
-                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .font(.system(size: 8, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .fixedSize()
         }
@@ -304,16 +304,16 @@ struct MenuBarSettingsView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Menu Bar")
-                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .font(.system(size: 24, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
 
                 Text("Configure which metrics appear in the menu bar preview.")
-                    .font(.subheadline)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.7))
 
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Preview")
-                        .font(.headline)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
 
                     Group {
@@ -324,22 +324,22 @@ struct MenuBarSettingsView: View {
                             StatusBarStripView(segments: previewSegments)
                         }
                     }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
                     .menuPanel(fillOpacity: 0.08, strokeOpacity: 0.1, shadow: false)
                 }
 
                 Spacer()
             }
-            .padding(24)
-            .frame(width: 300)
+            .padding(22)
+            .frame(width: 286)
             .background(
                 LinearGradient(colors: [Color("BackgroundTop"), Color("BackgroundBottom")], startPoint: .top, endPoint: .bottom)
             )
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Visible Items")
-                    .font(.headline)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
 
                 ForEach(MenuBarMetricItem.visibleCases) { item in
                     Toggle(isOn: binding(for: item)) {
@@ -349,14 +349,15 @@ struct MenuBarSettingsView: View {
                                 .foregroundStyle(item.accent)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title)
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 Text(previewText(for: item))
-                                    .font(.caption)
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
                                     .foregroundStyle(.secondary)
                             }
                         }
                     }
                     .toggleStyle(.switch)
-                    .padding(12)
+                    .padding(10)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color.black.opacity(0.03))
@@ -369,7 +370,7 @@ struct MenuBarSettingsView: View {
 
                 Spacer()
             }
-            .padding(24)
+            .padding(22)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(nsColor: .windowBackgroundColor))
         }
@@ -463,17 +464,18 @@ struct MenuMetricRow: View {
             HStack(spacing: 8) {
                 Circle()
                     .fill(accent)
-                    .frame(width: 8, height: 8)
+                    .frame(width: 7, height: 7)
                 Text(title)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.82))
             }
             Spacer()
             Text(format(value))
-                .font(.system(.body, design: .rounded).monospacedDigit())
+                .font(.system(size: 13, weight: .semibold, design: .rounded).monospacedDigit())
                 .foregroundStyle(.white)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
         .menuPanel(fillOpacity: 0.06, strokeOpacity: 0.08, cornerRadius: 12, shadow: false)
     }
 
@@ -488,10 +490,10 @@ private struct MenuBarActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .bold, design: .rounded))
+            .font(.system(size: 11, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .padding(.horizontal, 11)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(tint.opacity(configuration.isPressed ? 0.6 : 1))

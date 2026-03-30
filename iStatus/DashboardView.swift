@@ -1017,19 +1017,11 @@ private struct MetricValueBadge: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            .foregroundStyle(.white.opacity(0.92))
+            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.86))
             .lineLimit(1)
-            .minimumScaleFactor(0.8)
+            .minimumScaleFactor(0.72)
             .frame(width: width, alignment: .trailing)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 10)
-            .background(Color.white.opacity(0.055))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -1064,7 +1056,7 @@ struct ProcessRow: View {
     }
 }
 
-private let processRateColumnWidth: CGFloat = 84
+private let processRateColumnWidth: CGFloat = 62
 
 struct ProcessMemoryRow: View {
     let stat: ProcessMemStat
@@ -1076,7 +1068,7 @@ struct ProcessMemoryRow: View {
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .lineLimit(1)
             Spacer()
-            MetricValueBadge(text: formatBytes(stat.memoryBytes), width: 94)
+            MetricValueBadge(text: formatBytes(stat.memoryBytes), width: 72)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 12)
@@ -1512,20 +1504,21 @@ struct DiskRateMetric: View {
     let title: String
     let value: Double?
     let color: Color
+    var compact: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(formatRate(value))
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: compact ? 18 : 22, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
-            HStack(spacing: 8) {
+            HStack(spacing: compact ? 6 : 8) {
                 Circle()
                     .fill(color)
-                    .frame(width: 10, height: 10)
+                    .frame(width: compact ? 8 : 10, height: compact ? 8 : 10)
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.system(size: compact ? 13 : 16, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
             }
         }
@@ -1543,12 +1536,14 @@ struct ProcessDiskHeaderRow: View {
             Text("Process")
             Spacer()
             Text("Read/s")
-                .frame(width: 72, alignment: .trailing)
+                .frame(width: 62, alignment: .trailing)
             Text("Write/s")
-                .frame(width: 72, alignment: .trailing)
+                .frame(width: 62, alignment: .trailing)
         }
-        .font(.caption2)
-        .foregroundStyle(.white.opacity(0.7))
+        .font(.system(size: 11, weight: .bold, design: .rounded))
+        .foregroundStyle(.white.opacity(0.58))
+        .tracking(1)
+        .padding(.horizontal, 4)
     }
 }
 
@@ -1562,8 +1557,8 @@ struct ProcessDiskRow: View {
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .lineLimit(1)
             Spacer()
-            MetricValueBadge(text: format(stat.readBytesPerSecond), width: 84)
-            MetricValueBadge(text: format(stat.writeBytesPerSecond), width: 84)
+            MetricValueBadge(text: format(stat.readBytesPerSecond), width: 62)
+            MetricValueBadge(text: format(stat.writeBytesPerSecond), width: 62)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 12)
@@ -2521,16 +2516,16 @@ struct StatusItemDetailPopoverView: View {
     }
 
     private var popupHeader: some View {
-        HStack(spacing: 12) {
-            MetricGlyph(symbol: section.icon, accent: section.accent, size: 30)
+        HStack(spacing: 10) {
+            MetricGlyph(symbol: section.icon, accent: section.accent, size: 26)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(section.rawValue)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
                 Text("Live detail view")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
             }
 
@@ -2539,15 +2534,15 @@ struct StatusItemDetailPopoverView: View {
             HStack(spacing: 6) {
                 Circle()
                     .fill(section.accent)
-                    .frame(width: 7, height: 7)
+                    .frame(width: 6, height: 6)
                     .shadow(color: section.accent.opacity(0.7), radius: 5)
 
                 Text("Live")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.74))
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
             .background(section.accent.opacity(0.14))
             .overlay(
                 Capsule()
@@ -2556,7 +2551,7 @@ struct StatusItemDetailPopoverView: View {
             .clipShape(Capsule())
         }
         .padding(.horizontal, 4)
-        .padding(.bottom, 2)
+        .padding(.bottom, 1)
     }
 
     @ViewBuilder
@@ -2642,9 +2637,9 @@ struct StatusItemDetailPopoverView: View {
     private var networkPopupCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 24) {
-                    DiskRateMetric(title: "Upload", value: kbpsToBytes(metricsStore.latestValue(.networkUpKBps)), color: .pink)
-                    DiskRateMetric(title: "Download", value: kbpsToBytes(metricsStore.latestValue(.networkDownKBps)), color: .blue)
+                HStack(spacing: 18) {
+                    DiskRateMetric(title: "Upload", value: kbpsToBytes(metricsStore.latestValue(.networkUpKBps)), color: .pink, compact: true)
+                    DiskRateMetric(title: "Download", value: kbpsToBytes(metricsStore.latestValue(.networkDownKBps)), color: .blue, compact: true)
                 }
 
                 DualBarChartView(
@@ -2668,7 +2663,7 @@ struct StatusItemDetailPopoverView: View {
                         Spacer()
                         Text("Download \(peakLabel(for: filteredSeries(.networkDownKBps)))")
                     }
-                    .font(.system(.callout, design: .rounded))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
                 }
             }
@@ -2681,7 +2676,7 @@ struct StatusItemDetailPopoverView: View {
                     Image(systemName: "wifi")
                         .foregroundStyle(.blue)
                     Text(interface)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                 }
                 .padding(.horizontal, 6)
@@ -2691,7 +2686,7 @@ struct StatusItemDetailPopoverView: View {
             if let publicIPv4 = metricsStore.ipInfo.publicIPv4, !publicIPv4.isEmpty {
                 HStack {
                     Text(publicIPv4)
-                        .font(.system(.title3, design: .rounded))
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                     Spacer()
                 }
