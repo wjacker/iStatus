@@ -16,27 +16,56 @@ struct MemoryStackChartView: View {
             ZStack(alignment: .bottomLeading) {
                 chartGrid(in: proxy.size)
 
+                if let hoverIndex, hoverIndex < bars.count {
+                    chartSelectionColumn(
+                        index: hoverIndex,
+                        barCount: bars.count,
+                        width: proxy.size.width,
+                        height: proxy.size.height
+                    )
+                    .zIndex(1)
+                }
+
                 HStack(alignment: .bottom, spacing: barSpacing) {
                     Spacer(minLength: 0)
                     ForEach(Array(bars.enumerated()), id: \.offset) { index, bar in
                         VStack(spacing: 0) {
                             if bar.appHeight > 0 {
-                                Rectangle()
-                                    .fill(appColor)
+                                RoundedRectangle(cornerRadius: 1.8, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [appColor.opacity(0.96), appColor.opacity(0.58)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
                                     .frame(height: bar.appHeight)
                             }
                             if bar.wiredHeight > 0 {
-                                Rectangle()
-                                    .fill(wiredColor)
+                                RoundedRectangle(cornerRadius: 1.8, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [wiredColor.opacity(0.96), wiredColor.opacity(0.56)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
                                     .frame(height: bar.wiredHeight)
                             }
                             if bar.compressedHeight > 0 {
-                                Rectangle()
-                                    .fill(compressedColor)
+                                RoundedRectangle(cornerRadius: 1.8, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [compressedColor.opacity(0.96), compressedColor.opacity(0.56)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
                                     .frame(height: bar.compressedHeight)
                             }
                         }
                         .frame(width: barWidth)
+                        .shadow(color: hoverIndex == index ? Color.white.opacity(0.08) : .clear, radius: 6)
                         .onHover { hovering in
                             hoverIndex = hovering ? index : nil
                         }
@@ -62,13 +91,28 @@ struct MemoryStackChartView: View {
     private func chartGrid(in size: CGSize) -> some View {
         let rows: Int = 4
         return Path { path in
-            for row in 1..<rows {
+            for row in 1...rows {
                 let y = size.height * CGFloat(row) / CGFloat(rows)
                 path.move(to: CGPoint(x: 0, y: y))
                 path.addLine(to: CGPoint(x: size.width, y: y))
             }
         }
-        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        .stroke(Color.white.opacity(0.09), style: StrokeStyle(lineWidth: 1, dash: [4, 5]))
+    }
+
+    private func chartSelectionColumn(index: Int, barCount: Int, width: CGFloat, height: CGFloat) -> some View {
+        let totalWidth = CGFloat(barCount) * barWidth + CGFloat(max(barCount - 1, 0)) * barSpacing
+        let leftOffset = max(width - totalWidth, 0)
+        let x = leftOffset + CGFloat(index) * (barWidth + barSpacing)
+
+        return RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(Color.white.opacity(0.055))
+            .frame(width: max(barWidth + 2, 5), height: height)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .offset(x: x - 1)
     }
 
     private func bucketedBars(in size: CGSize) -> [StackBar] {
@@ -208,8 +252,14 @@ struct MemoryStackChartView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(Color.black.opacity(0.7))
-            .cornerRadius(8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.black.opacity(0.72))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+            )
         }
 
         private func formatBytes(_ value: Double) -> String {

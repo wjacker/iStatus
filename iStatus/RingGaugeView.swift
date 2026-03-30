@@ -14,12 +14,22 @@ struct RingGaugeView: View {
             Circle()
                 .strokeBorder(Color.white.opacity(0.18), lineWidth: lineWidth)
             Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.white.opacity(0.12), Color.clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: size * 0.45
+                    )
+                )
+            Circle()
                 .trim(from: 0, to: CGFloat(min(value / 100, 1)))
                 .stroke(
                     AngularGradient(colors: gradientColors, center: .center),
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: (colors.first ?? .pink).opacity(0.35), radius: 8)
             VStack(spacing: 2) {
                 Text(String(format: "%.0f%%", value))
                     .font(.system(size: valueFontSize, weight: .bold, design: .rounded))

@@ -8,6 +8,7 @@ struct MiniChartView: View {
     let accent: Color
     let range: TimeInterval
     let bucketInterval: TimeInterval
+    var valueFormatter: ((Double?) -> String)? = nil
 
     @State private var hoverIndex: Int?
 
@@ -19,10 +20,20 @@ struct MiniChartView: View {
             ZStack(alignment: .bottomLeading) {
                 chartGrid(in: proxy.size)
 
+                if let hoverIndex, hoverIndex < displayBars.count {
+                    chartSelectionColumn(
+                        index: hoverIndex,
+                        barCount: displayBars.count,
+                        width: proxy.size.width,
+                        height: proxy.size.height
+                    )
+                    .zIndex(1)
+                }
+
                 HStack(alignment: .bottom, spacing: barSpacing) {
                     Spacer(minLength: 0)
                     ForEach(Array(displayBars.enumerated()), id: \.offset) { index, bar in
-                        BarCell(bar: bar, accent: accent)
+                        BarCell(bar: bar, accent: accent, isHovering: hoverIndex == index)
                             .onHover { hovering in
                                 hoverIndex = hovering ? index : nil
                             }
@@ -31,7 +42,7 @@ struct MiniChartView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottomLeading)
 
                 if let hoverIndex, hoverIndex < displayBars.count {
-                    SingleTooltip(bar: displayBars[hoverIndex])
+                    SingleTooltip(bar: displayBars[hoverIndex], valueFormatter: valueFormatter)
                         .position(x: tooltipX(for: hoverIndex, barCount: displayBars.count, width: proxy.size.width), y: 12)
                         .allowsHitTesting(false)
                         .zIndex(2)
@@ -49,13 +60,28 @@ struct MiniChartView: View {
     private func chartGrid(in size: CGSize) -> some View {
         let rows: Int = 4
         return Path { path in
-            for row in 1..<rows {
+            for row in 1...rows {
                 let y = size.height * CGFloat(row) / CGFloat(rows)
                 path.move(to: CGPoint(x: 0, y: y))
                 path.addLine(to: CGPoint(x: size.width, y: y))
             }
         }
-        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        .stroke(Color.white.opacity(0.09), style: StrokeStyle(lineWidth: 1, dash: [4, 5]))
+    }
+
+    private func chartSelectionColumn(index: Int, barCount: Int, width: CGFloat, height: CGFloat) -> some View {
+        let totalWidth = CGFloat(barCount) * barWidth + CGFloat(max(barCount - 1, 0)) * barSpacing
+        let leftOffset = max(width - totalWidth, 0)
+        let x = leftOffset + CGFloat(index) * (barWidth + barSpacing)
+
+        return RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(Color.white.opacity(0.06))
+            .frame(width: max(barWidth + 2, 5), height: height)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .offset(x: x - 1)
     }
 
     private func bucketedBars(in size: CGSize) -> [Bar] {
@@ -130,28 +156,61 @@ struct MiniChartView: View {
     private struct BarCell: View {
         let bar: Bar
         let accent: Color
+        let isHovering: Bool
 
         var body: some View {
             RoundedRectangle(cornerRadius: 2)
-                .fill(bar.value == nil ? Color.clear : accent.opacity(0.85))
+                .fill(
+                    bar.value == nil
+                    ? AnyShapeStyle(Color.clear)
+                    : AnyShapeStyle(
+                        LinearGradient(
+                            colors: [
+                                accent.opacity(isHovering ? 1 : 0.98),
+                                accent.opacity(isHovering ? 0.72 : 0.46)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                )
                 .frame(width: bar.width, height: bar.height)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(Color.white.opacity(isHovering ? 0.24 : 0.1), lineWidth: isHovering ? 0.8 : 0.4)
+                )
+                .shadow(color: accent.opacity(isHovering ? 0.34 : 0.18), radius: isHovering ? 8 : 4, y: 0)
         }
     }
 
     private struct SingleTooltip: View {
         let bar: Bar
+        let valueFormatter: ((Double?) -> String)?
 
         var body: some View {
             VStack(spacing: 2) {
                 Text(Self.timeFormatter.string(from: bar.timestamp))
-                Text(String(format: "%.1f", bar.value ?? 0))
+                Text(formattedValue)
             }
             .font(.system(size: 10, weight: .semibold, design: .rounded))
             .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .background(Color.black.opacity(0.7))
-            .cornerRadius(6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.black.opacity(0.72))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+            )
+        }
+
+        private var formattedValue: String {
+            if let valueFormatter {
+                return valueFormatter(bar.value)
+            }
+            return String(format: "%.1f", bar.value ?? 0)
         }
 
         private static let timeFormatter: DateFormatter = {
@@ -180,6 +239,15 @@ struct DualBarChartView: View {
             ZStack {
                 chartGrid(in: proxy.size)
 
+                if let hoverIndex, hoverIndex < displayBars.count {
+                    chartSelectionColumn(
+                        index: hoverIndex,
+                        barCount: displayBars.count,
+                        width: proxy.size.width,
+                        height: proxy.size.height
+                    )
+                }
+
                 HStack(alignment: .center, spacing: barSpacing) {
                     Spacer(minLength: 0)
                     ForEach(Array(displayBars.enumerated()), id: \.offset) { index, bar in
@@ -204,7 +272,22 @@ struct DualBarChartView: View {
                 path.addLine(to: CGPoint(x: size.width, y: y))
             }
         }
-        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        .stroke(Color.white.opacity(0.09), style: StrokeStyle(lineWidth: 1, dash: [4, 5]))
+    }
+
+    private func chartSelectionColumn(index: Int, barCount: Int, width: CGFloat, height: CGFloat) -> some View {
+        let totalWidth = CGFloat(barCount) * barWidth + CGFloat(max(barCount - 1, 0)) * barSpacing
+        let leftOffset = max(width - totalWidth, 0)
+        let x = leftOffset + CGFloat(index) * (barWidth + barSpacing)
+
+        return RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(Color.white.opacity(0.055))
+            .frame(width: max(barWidth + 2, 5), height: height)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .offset(x: x - 1)
     }
 
     private func bucketedBars(in size: CGSize) -> [DualBar] {
@@ -312,15 +395,27 @@ struct DualBarChartView: View {
                     let gap = midGap
 
                     if bar.upValue != nil {
-                        Rectangle()
-                            .fill(upColor)
+                        RoundedRectangle(cornerRadius: 1.8, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [upColor.opacity(0.98), upColor.opacity(0.5)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                             .frame(width: bar.width, height: bar.upHeight)
                             .position(x: bar.width / 2, y: mid - gap / 2 - bar.upHeight / 2)
                     }
 
                     if bar.downValue != nil {
-                        Rectangle()
-                            .fill(downColor)
+                        RoundedRectangle(cornerRadius: 1.8, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [downColor.opacity(0.98), downColor.opacity(0.5)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                             .frame(width: bar.width, height: bar.downHeight)
                             .position(x: bar.width / 2, y: mid + gap / 2 + bar.downHeight / 2)
                     }
@@ -328,6 +423,7 @@ struct DualBarChartView: View {
             }
             .frame(width: bar.width)
             .overlay(tooltip, alignment: .top)
+            .shadow(color: isHovering ? Color.white.opacity(0.08) : .clear, radius: 6)
             .zIndex(isHovering ? 20 : 0)
         }
 
@@ -353,8 +449,14 @@ struct DualBarChartView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.black.opacity(0.72))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            )
+                    )
                     .fixedSize()
                     .offset(y: -6)
                     .allowsHitTesting(false)
