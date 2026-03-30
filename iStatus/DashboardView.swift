@@ -305,21 +305,25 @@ struct DashboardView: View {
 
     private var headerMeta: some View {
         HStack(spacing: 10) {
-            Label("Live", systemImage: "dot.radiowaves.left.and.right")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(selectedSection.accent.opacity(0.2))
-                .overlay(
-                    Capsule()
-                        .stroke(selectedSection.accent.opacity(0.45), lineWidth: 1)
-                )
-                .clipShape(Capsule())
-                .foregroundStyle(selectedSection.accent)
-
             if let menuBarItem = selectedSection.menuBarItem {
                 MenuBarVisibilityButton(item: menuBarItem, style: .header)
             }
+
+            HStack(spacing: 8) {
+                Image(systemName: "dot.radiowaves.left.and.right")
+                    .font(.system(size: 12, weight: .bold))
+                Text("Live")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+            }
+            .foregroundStyle(selectedSection.accent)
+            .padding(.horizontal, 16)
+            .frame(height: 44)
+            .background(selectedSection.accent.opacity(0.18))
+            .overlay(
+                Capsule()
+                    .stroke(selectedSection.accent.opacity(0.38), lineWidth: 1)
+            )
+            .clipShape(Capsule())
         }
     }
 
@@ -720,27 +724,54 @@ struct MenuBarVisibilityButton: View {
     }
 
     var body: some View {
+        let isEnabled = menuBarSettings.isEnabled(item)
+
         Button {
             isOnBinding.wrappedValue.toggle()
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: menuBarSettings.isEnabled(item) ? "menubar.rectangle" : "menubar.rectangle.slash")
-                    .font(.system(size: 11, weight: .bold))
-                Text(menuBarSettings.isEnabled(item) ? "Menu Bar On" : "Menu Bar Off")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+            HStack(spacing: 10) {
+                ZStack(alignment: isEnabled ? .trailing : .leading) {
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: isEnabled
+                                ? [Color(red: 0.11, green: 0.50, blue: 0.98), Color(red: 0.21, green: 0.67, blue: 1.0)]
+                                : [Color.white.opacity(0.22), Color.white.opacity(0.14)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 52, height: 30)
+
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            if isEnabled {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 14, weight: .black))
+                                    .foregroundStyle(Color.black.opacity(0.82))
+                            }
+                        }
+                        .padding(1)
+                        .shadow(color: .black.opacity(isEnabled ? 0.24 : 0.14), radius: 8, x: 0, y: 4)
+                }
+
+                Text(isEnabled ? "On" : "Off")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(isEnabled ? 0.92 : 0.7))
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(menuBarSettings.isEnabled(item) ? 0.14 : 0.08))
+            .padding(.horizontal, 8)
+            .frame(height: 44)
+            .background(Color.white.opacity(isEnabled ? 0.12 : 0.06))
             .overlay(
-                Capsule()
-                    .stroke(Color.white.opacity(menuBarSettings.isEnabled(item) ? 0.18 : 0.1), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                    .stroke(Color.white.opacity(isEnabled ? 0.18 : 0.09), lineWidth: 1)
             )
-            .clipShape(Capsule())
-            .foregroundStyle(menuBarSettings.isEnabled(item) ? .white : .white.opacity(0.7))
+            .clipShape(RoundedRectangle(cornerRadius: 999, style: .continuous))
         }
         .buttonStyle(.plain)
-        .help(menuBarSettings.isEnabled(item) ? "Hide from menu bar" : "Show in menu bar")
+        .help(isEnabled ? "Hide from menu bar" : "Show in menu bar")
     }
 
     private var isOnBinding: Binding<Bool> {
