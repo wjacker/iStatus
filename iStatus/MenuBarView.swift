@@ -219,7 +219,7 @@ struct StatusBarStripView: View {
     var showsBackground: Bool = true
 
     var body: some View {
-        HStack(alignment: .center, spacing: useCompactPadding ? 8 : 10) {
+        HStack(alignment: .center, spacing: useCompactPadding ? 10 : 12) {
             ForEach(segments) { segment in
                 switch segment.kind {
                 case let .network(up, down):
@@ -229,8 +229,8 @@ struct StatusBarStripView: View {
                 }
             }
         }
-        .padding(.horizontal, useCompactPadding ? 4 : 8)
-        .padding(.vertical, useCompactPadding ? 1 : 5)
+        .padding(.horizontal, useCompactPadding ? 5 : 9)
+        .padding(.vertical, useCompactPadding ? 2 : 5)
         .background(backgroundShape)
     }
 
@@ -254,7 +254,7 @@ private struct NetworkStripBlock: View {
     let down: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 0) {
             StripValueLine(symbol: "↑", value: up)
             StripValueLine(symbol: "↓", value: down)
         }
@@ -266,12 +266,12 @@ private struct StripValueLine: View {
     let value: String
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Text(symbol)
-                .font(.system(size: 7, weight: .bold, design: .rounded))
+                .font(.system(size: 9, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.92))
             Text(value)
-                .font(.system(size: 7, weight: .semibold, design: .rounded))
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
                 .fixedSize()
         }
@@ -283,13 +283,13 @@ private struct MetricStripBlock: View {
     let value: String
 
     var body: some View {
-        VStack(alignment: .center, spacing: 0) {
+        VStack(alignment: .center, spacing: -1) {
             Text(title)
-                .font(.system(size: 6, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.75))
-                .tracking(0.2)
-            Text(value)
                 .font(.system(size: 8, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.75))
+                .tracking(0.3)
+            Text(value)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .fixedSize()
         }

@@ -1169,20 +1169,18 @@ struct DiskCardView: View {
                 )
             }
 
-            HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 14) {
                 if let detail = metricsStore.diskDetail {
                     DiskUsageRingView(volume: detail.volume)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     DiskCapacityLegend(volume: detail.volume)
+                        .frame(maxWidth: .infinity)
                 } else {
                     placeholderPanel(
                         title: "Disk details are loading",
                         message: "Capacity and volume breakdown will appear after the first disk sample arrives."
                     )
                 }
-            }
-
-            if let detail = metricsStore.diskDetail {
-                DiskVolumeHeader(volume: detail.volume)
             }
 
             VStack(alignment: .leading, spacing: 12) {
@@ -1261,71 +1259,31 @@ struct DiskCardView: View {
     }
 }
 
-struct DiskVolumeHeader: View {
-    let volume: DiskVolumeStat
-
-    var body: some View {
-        HStack(spacing: 12) {
-            RingGaugeView(
-                value: volume.usedPercent,
-                label: "USED",
-                colors: [.blue, .cyan, .blue],
-                size: 86,
-                lineWidth: 9,
-                valueFontSize: 13
-            )
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(volume.name)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text("\(formatBytes(volume.freeBytes)) available")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 10) {
-                Circle()
-                    .fill(Color.pink)
-                    .frame(width: 12, height: 12)
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 12, height: 12)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.white.opacity(0.05))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.blue.opacity(0.85), lineWidth: 1.2)
-        )
-        .cornerRadius(16)
-    }
-
-    private func formatBytes(_ value: UInt64) -> String {
-        ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .binary)
-    }
-}
-
 struct DiskUsageRingView: View {
     let volume: DiskVolumeStat
-    private let ringWidth: CGFloat = 18
-    private let segmentGap: CGFloat = 0.012
+    private let size: CGFloat = 200
+    private let segmentGap: Double = 0.014
+    private let minimumVisibleFraction: Double = 0.02
+
+    private var ringWidth: CGFloat {
+        size >= 190 ? 15 : 12
+    }
+
+    private var valueFontSize: CGFloat {
+        size >= 190 ? 26 : 18
+    }
 
     var body: some View {
         ZStack {
             Circle()
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: ringWidth)
+                .stroke(Color.white.opacity(0.12), lineWidth: ringWidth)
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [Color.blue.opacity(0.18), Color.clear],
                         center: .center,
                         startRadius: 0,
-                        endRadius: 84
+                        endRadius: size * 0.32
                     )
                 )
 
@@ -1335,7 +1293,7 @@ struct DiskUsageRingView: View {
                     .trim(from: adjustedStart(for: segment), to: adjustedEnd(for: segment))
                     .stroke(segment.color, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .shadow(color: segment.color.opacity(0.22), radius: 6)
+                    .shadow(color: segment.color.opacity(0.18), radius: 4)
             }
 
             Circle()
@@ -1346,62 +1304,78 @@ struct DiskUsageRingView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .padding(ringWidth + 10)
+                .padding(ringWidth + 6)
                 .overlay(
                     Circle()
                         .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
-                        .padding(ringWidth + 10)
+                        .padding(ringWidth + 6)
                 )
 
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text(String(format: "%.0f%%", volume.usedPercent))
-                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .font(.system(size: valueFontSize, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text("USED")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.62))
-                    .tracking(1.2)
+                    .tracking(1.1)
             }
         }
-        .padding(14)
-        .frame(width: 200, height: 200)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                )
-        )
-        .shadow(color: .black.opacity(0.16), radius: 14, x: 0, y: 10)
+        .frame(width: size, height: size)
+        .shadow(color: .black.opacity(0.14), radius: 10, x: 0, y: 7)
     }
 
-    private var segments: [(start: CGFloat, end: CGFloat, color: Color)] {
+    private var segments: [Segment] {
         let total = max(Double(volume.totalBytes), 1)
-        let used = Double(volume.usedBytes) / total
-        let purgeable = Double(volume.purgeableBytes) / total
-        let free = Double(volume.freeBytes) / total
-
-        let values = [
-            (used, Color.blue),
-            (purgeable, Color.pink),
-            (free, Color.white.opacity(0.22))
+        let rawSegments: [(value: Double, color: Color)] = [
+            (Double(volume.usedBytes) / total, .blue),
+            (Double(volume.purgeableBytes) / total, .pink),
+            (Double(volume.freeBytes) / total, .gray)
         ]
 
-        var start: CGFloat = 0
-        return values.map { part, color in
-            let end = start + CGFloat(part)
+        let nonZeroCount = rawSegments.filter { $0.value > 0 }.count
+        let minimumBudget = Double(nonZeroCount) * minimumVisibleFraction
+        let normalizedSegments: [(value: Double, color: Color)]
+        if nonZeroCount > 0, minimumBudget < 1 {
+            let expandableTotal = rawSegments
+                .filter { $0.value > minimumVisibleFraction }
+                .reduce(0.0) { $0 + $1.value }
+            let remaining = max(1 - minimumBudget, 0)
+
+            normalizedSegments = rawSegments.map { segment in
+                guard segment.value > 0 else { return (0, segment.color) }
+                if segment.value <= minimumVisibleFraction {
+                    return (minimumVisibleFraction, segment.color)
+                }
+
+                guard expandableTotal > 0 else { return (minimumVisibleFraction, segment.color) }
+                let scaledValue = remaining * (segment.value / expandableTotal)
+                return (max(scaledValue, minimumVisibleFraction), segment.color)
+            }
+        } else {
+            normalizedSegments = rawSegments
+        }
+
+        var start = 0.0
+        return normalizedSegments.map { segment in
+            let end = min(start + segment.value, 1)
             defer { start = end }
-            return (start, end, color)
+            return Segment(start: start, end: end, color: segment.color)
         }
     }
 
-    private func adjustedStart(for segment: (start: CGFloat, end: CGFloat, color: Color)) -> CGFloat {
+    private func adjustedStart(for segment: Segment) -> Double {
         min(segment.start + segmentGap / 2, segment.end)
     }
 
-    private func adjustedEnd(for segment: (start: CGFloat, end: CGFloat, color: Color)) -> CGFloat {
+    private func adjustedEnd(for segment: Segment) -> Double {
         max(segment.end - segmentGap / 2, segment.start)
+    }
+
+    private struct Segment {
+        let start: Double
+        let end: Double
+        let color: Color
     }
 }
 
@@ -1409,45 +1383,32 @@ struct DiskCapacityLegend: View {
     let volume: DiskVolumeStat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("CAPACITY BREAKDOWN")
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
                 .tracking(1.2)
 
-            DiskLegendRow(
-                color: .blue,
-                title: "Used",
-                value: formatBytes(volume.usedBytes),
-                subtitle: String(format: "%.0f%% of disk", volume.usedPercent)
-            )
-            DiskLegendRow(
-                color: .pink,
-                title: "Purgeable",
-                value: formatBytes(volume.purgeableBytes),
-                subtitle: "Recoverable space"
-            )
-            DiskLegendRow(
-                color: Color.white.opacity(0.35),
-                title: "Free",
-                value: formatBytes(volume.freeBytes),
-                subtitle: "Immediately available"
-            )
+            VStack(spacing: 6) {
+                DiskLegendRow(color: .blue, title: "Used", value: formatBytes(volume.usedBytes))
+                DiskLegendRow(color: .pink, title: "Purgeable", value: formatBytes(volume.purgeableBytes))
+                DiskLegendRow(color: Color.white.opacity(0.35), title: "Free", value: formatBytes(volume.freeBytes))
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.04)],
+                        colors: [Color.white.opacity(0.06), Color.white.opacity(0.03)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
                 )
         )
         .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 8)
@@ -1462,38 +1423,25 @@ struct DiskLegendRow: View {
     let color: Color
     let title: String
     let value: String
-    let subtitle: String
 
     var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
+        HStack(spacing: 10) {
+            Circle()
                 .fill(color)
-                .frame(width: 12, height: 40)
-                .shadow(color: color.opacity(0.35), radius: 6)
+                .frame(width: 9, height: 9)
+                .shadow(color: color.opacity(0.28), radius: 4)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title.uppercased())
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.58))
-                    .tracking(1.1)
-                Text(value)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text(subtitle)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
-            }
+            Text(title)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.82))
 
             Spacer()
+
+            Text(value)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.white.opacity(0.045))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.vertical, 2)
     }
 }
 
@@ -2795,9 +2743,7 @@ struct StatusItemDetailPopoverView: View {
         switch section {
         case .battery:
             return 720
-        case .disk:
-            return 620
-        case .memory, .network:
+        case .disk, .memory, .network:
             return 340
         default:
             return 340

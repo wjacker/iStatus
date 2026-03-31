@@ -80,6 +80,7 @@ struct MemoryDetail: Sendable {
 struct DiskVolumeStat: Identifiable, Sendable {
     let id = UUID()
     let name: String
+    let mountPath: String
     let usedPercent: Double
     let totalBytes: UInt64
     let usedBytes: UInt64

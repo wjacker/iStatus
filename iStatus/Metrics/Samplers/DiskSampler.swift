@@ -33,17 +33,22 @@ final class DiskSampler {
             guard let values = try? url.resourceValues(forKeys: capacityKeys) else { continue }
 
             let name = values.volumeName ?? url.lastPathComponent
+            let mountPath = url.path
             let total = UInt64(values.volumeTotalCapacity ?? 0)
-            let importantFree = UInt64(values.volumeAvailableCapacityForImportantUsage ?? Int64(values.volumeAvailableCapacity ?? 0))
+            let availableFree = UInt64(values.volumeAvailableCapacity ?? 0)
+            let importantFree = UInt64(values.volumeAvailableCapacityForImportantUsage ?? Int64(availableFree))
             let opportunisticFree = UInt64(values.volumeAvailableCapacityForOpportunisticUsage ?? Int64(values.volumeAvailableCapacity ?? 0))
             guard total > 0 else { continue }
-            let purgeable = opportunisticFree > importantFree ? (opportunisticFree - importantFree) : 0
-            let free = min(importantFree, total)
+            let purgeableFromImportant = importantFree > availableFree ? (importantFree - availableFree) : 0
+            let purgeableFromOpportunistic = availableFree > opportunisticFree ? (availableFree - opportunisticFree) : 0
+            let purgeable = max(purgeableFromImportant, purgeableFromOpportunistic)
+            let free = min(availableFree, total)
             let used = total > (free + purgeable) ? (total - free - purgeable) : 0
             let usedPercent = (Double(used) / Double(total)) * 100
             stats.append(
                 DiskVolumeStat(
                     name: name,
+                    mountPath: mountPath,
                     usedPercent: usedPercent,
                     totalBytes: total,
                     usedBytes: used,
@@ -60,6 +65,7 @@ final class DiskSampler {
         let path = url.path
         if values.isVolume != true { return false }
         if path == "/" { return true }
+        if path == "/System/Volumes/Data" { return true }
         if path.hasPrefix("/System/Volumes/") { return false }
         if path.hasPrefix("/private/var/") { return false }
         if path.hasPrefix("/dev/") { return false }

@@ -181,6 +181,7 @@ final class MetricsStore: ObservableObject {
                 let usedPercent = primaryVolume.totalBytes > 0 ? (Double(primaryVolume.usedBytes) / Double(primaryVolume.totalBytes)) * 100 : 0
                 let normalizedVolume = DiskVolumeStat(
                     name: primaryVolume.name,
+                    mountPath: primaryVolume.mountPath,
                     usedPercent: usedPercent,
                     totalBytes: primaryVolume.totalBytes,
                     usedBytes: primaryVolume.usedBytes,
@@ -197,6 +198,7 @@ final class MetricsStore: ObservableObject {
             let usedPercent = primaryVolume.totalBytes > 0 ? (Double(primaryVolume.usedBytes) / Double(primaryVolume.totalBytes)) * 100 : 0
             let normalizedVolume = DiskVolumeStat(
                 name: primaryVolume.name,
+                mountPath: primaryVolume.mountPath,
                 usedPercent: usedPercent,
                 totalBytes: primaryVolume.totalBytes,
                 usedBytes: primaryVolume.usedBytes,
@@ -260,7 +262,10 @@ final class MetricsStore: ObservableObject {
     }
 
     private func preferredDiskVolume(from volumes: [DiskVolumeStat]) -> DiskVolumeStat? {
-        volumes.first(where: { $0.name == "Macintosh HD" }) ?? volumes.max(by: { $0.totalBytes < $1.totalBytes })
+        volumes.first(where: { $0.mountPath == "/System/Volumes/Data" })
+        ?? volumes.first(where: { $0.name == "Data" || $0.name == "Macintosh HD - Data" })
+        ?? volumes.first(where: { $0.name == "Macintosh HD" })
+        ?? volumes.max(by: { $0.totalBytes < $1.totalBytes })
     }
 
     private func updateLocalIPsIfNeeded(now: Date) {
