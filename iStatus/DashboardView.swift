@@ -246,7 +246,7 @@ struct DashboardView: View {
                 quickStats(isCompact: isCompact)
 
                 if selectedSection == .overview {
-                    overviewGrid(isCompact: isCompact)
+                    overviewGrid(availableWidth: availableWidth)
                 } else {
                     sectionDetail
                 }
@@ -351,12 +351,76 @@ struct DashboardView: View {
         }
     }
 
-    private func overviewGrid(isCompact: Bool) -> some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: isCompact ? 260 : 320), spacing: 18)], spacing: 18) {
+    private func overviewGrid(availableWidth: CGFloat) -> some View {
+        let outerTrailingInset: CGFloat = 14
+        let columnCount: Int
+        if availableWidth < 760 {
+            columnCount = 1
+        } else if availableWidth < 1120 {
+            columnCount = 2
+        } else {
+            columnCount = 3
+        }
+
+        let columns = distributeOverviewCards(into: columnCount)
+        let spacing: CGFloat = 18
+        let totalSpacing = spacing * CGFloat(max(columnCount - 1, 0))
+        let usableWidth = max(availableWidth - outerTrailingInset, 0)
+        let columnWidth = max((usableWidth - totalSpacing) / CGFloat(columnCount), 0)
+
+        return HStack(alignment: .top, spacing: 18) {
+            ForEach(Array(columns.enumerated()), id: \.offset) { _, column in
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(column) { card in
+                        overviewCardView(for: card.kind)
+                            .frame(width: columnWidth, alignment: .topLeading)
+                    }
+                }
+                .frame(width: columnWidth, alignment: .topLeading)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.trailing, outerTrailingInset)
+    }
+
+    private func distributeOverviewCards(into columnCount: Int) -> [[OverviewCardItem]] {
+        let cards = overviewCards
+        guard columnCount > 1 else { return [cards] }
+
+        var columns = Array(repeating: [OverviewCardItem](), count: columnCount)
+        var columnHeights = Array(repeating: CGFloat.zero, count: columnCount)
+
+        for card in cards {
+            let targetIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })?.offset ?? 0
+            columns[targetIndex].append(card)
+            columnHeights[targetIndex] += card.estimatedHeight
+        }
+
+        return columns
+    }
+
+    private var overviewCards: [OverviewCardItem] {
+        [
+            OverviewCardItem(kind: .cpu, estimatedHeight: 420),
+            OverviewCardItem(kind: .memory, estimatedHeight: 540),
+            OverviewCardItem(kind: .disk, estimatedHeight: 470),
+            OverviewCardItem(kind: .network, estimatedHeight: 430),
+            OverviewCardItem(kind: .battery, estimatedHeight: 500)
+        ]
+    }
+
+    @ViewBuilder
+    private func overviewCardView(for kind: OverviewCardKind) -> some View {
+        switch kind {
+        case .cpu:
             cpuCard
+        case .memory:
             memoryCard
+        case .disk:
             diskCard
+        case .network:
             networkCard
+        case .battery:
             batteryCard
         }
     }
@@ -533,6 +597,20 @@ struct DashboardView: View {
         let mb = Double(value) / 1_048_576
         return String(format: "%.0fMB", mb)
     }
+}
+
+private enum OverviewCardKind {
+    case cpu
+    case memory
+    case disk
+    case network
+    case battery
+}
+
+private struct OverviewCardItem: Identifiable {
+    let id = UUID()
+    let kind: OverviewCardKind
+    let estimatedHeight: CGFloat
 }
 
 private extension DashboardSection {
