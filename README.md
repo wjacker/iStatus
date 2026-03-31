@@ -18,7 +18,7 @@ The current app covers:
 
 - CPU usage
 - Memory usage and memory composition
-- Disk usage and disk throughput
+- Disk usage, purgeable space, and disk throughput
 - Network throughput, IP information, and top network-active processes
 - Battery level, health, power, and significant energy usage
 
@@ -36,14 +36,20 @@ The current app covers:
 
 - Enable or disable individual metric items
 - Keep key system stats visible at a glance
+- Compact menu bar strip with configurable metric order and visibility
 - Open focused popovers directly from the menu bar
+- Dedicated menu bar settings window for previewing and reordering visible items
 
 ### Dashboard
 
-- Overview screen for the most important metrics
+- Overview screen with a waterfall-style summary layout
+- Dedicated sections for CPU, Memory, Disk, Network, CPU Temp, and Battery
 - Dedicated sections for CPU, Memory, Disk, Network, and Battery
 - Time-range switching for historical inspection
+- Collapsible sidebar for faster navigation
 - Small, dense charts optimized for dark UI
+- Empty states and no-data states that stay visually consistent
+- Compact layout behavior for narrower window sizes
 
 ### Process-Level Insights
 
@@ -59,31 +65,63 @@ The current app covers:
 - Power adapter state
 - Voltage, amperage, temperature, and cycle count when available
 
+### Detail Popovers
+
+- Unified popover header and visual language across CPU, Memory, Disk, Network, Temperature, and Battery
+- Unified popover header and visual language across CPU, Memory, Disk, Network, and Battery
+- Compact metric layouts optimized for menu bar usage
+- Shared ring, chart, and process-list styling between dashboard and popovers
+- Per-metric popup widths tuned for menu bar readability
+
 ## Screenshots
+
+The current screenshots should be refreshed to match the latest UI.
 
 ### Menu Bar
 
-Compact always-on metrics in the macOS menu bar.
+Compact always-on metrics in the macOS menu bar, including the updated larger status-strip typography.
 
 ![Menu Bar](docs/screenshots/menu-bar.png)
 
-### Network Popover
+### Metric Popover
 
-Focused network detail with live throughput, IP addresses, and top processes.
+Use one refreshed popover screenshot that shows the current single-layer popup style, updated header controls, and process list layout.
 
 ![Network Popover](docs/screenshots/network-popover.png)
 
 ### Dashboard Overview
 
-The main dashboard combines historical charts with dense system summaries.
+The main dashboard combines historical charts with dense system summaries and the updated overview waterfall layout.
 
 ![Dashboard Overview](docs/screenshots/dashboard-overview.png)
 
-### Battery Panel
+### Memory Or Disk Detail
 
-Battery health, power adapter state, capacity, and energy usage in one view.
+Use one refreshed detail screenshot that highlights the latest ring + breakdown presentation.
 
 ![Battery Panel](docs/screenshots/battery-panel.png)
+
+Recommended screenshot updates:
+
+- `docs/screenshots/menu-bar.png`
+  Refresh with the current menu bar strip typography and spacing.
+- `docs/screenshots/network-popover.png`
+  Replace with any one current popover that shows the unified popup header and single-layer card structure.
+- `docs/screenshots/dashboard-overview.png`
+  Refresh with the current overview waterfall layout and updated sidebar/header styling.
+- `docs/screenshots/battery-panel.png`
+  Replace with either the latest battery detail panel or a new memory/disk detail screenshot, depending on which panel you want to feature.
+
+Additional screenshots worth adding:
+
+- `docs/screenshots/menu-bar-settings.png`
+  Show the dedicated menu bar settings window with the live strip preview and visibility toggles.
+- `docs/screenshots/memory-popover.png`
+  Capture the compact dual-ring memory popup with the updated breakdown panel.
+- `docs/screenshots/disk-popover.png`
+  Capture the disk popup with the single-ring layout and Memory-style capacity breakdown.
+- `docs/screenshots/cpu-temp-popover.png`
+  Optional, but useful if you want to highlight temperature, thermal, and fan telemetry.
 
 ## App Behavior
 
@@ -121,11 +159,14 @@ If icons or assets do not refresh immediately:
 - `iStatus/iStatusApp.swift`
   App entry point, status bar setup, window presentation, and Dock visibility behavior.
 
+- `iStatus/StatusBarController.swift`
+  AppKit bridge that hosts the menu bar home panel and coordinates menu presentation.
+
 - `iStatus/DashboardView.swift`
-  Main dashboard UI, detail popovers, process tables, battery panels, and shared formatting helpers.
+  Main dashboard UI, overview waterfall layout, detail popovers, process tables, metric cards, and shared formatting helpers.
 
 - `iStatus/MenuBarView.swift`
-  Menu bar settings UI, item definitions, and compact status strip rendering.
+  Menu bar home, menu bar settings UI, item definitions, and compact status strip rendering.
 
 - `iStatus/MiniChartView.swift`
   Reusable compact chart primitives.
@@ -134,7 +175,7 @@ If icons or assets do not refresh immediately:
   Specialized stacked memory visualization.
 
 - `iStatus/RingGaugeView.swift`
-  Ring-based gauge components used in the battery UI.
+  Ring-based gauge components used across summary views.
 
 - `iStatus/Metrics/MetricsStore.swift`
   Central sampling loop, published metric state, persistence, and worker coordination.
@@ -146,7 +187,16 @@ If icons or assets do not refresh immediately:
   In-memory history storage for time-series samples.
 
 - `iStatus/Metrics/Samplers/`
-  System samplers for CPU, memory, disk, network, temperature, and battery.
+  System samplers for CPU, memory, disk, network, and battery.
+
+- `iStatus/Helper/`
+  Privileged helper setup used for telemetry that needs elevated access on supported machines.
+
+- `iStatus/Shared/`
+  Shared helper communication models and XPC contracts.
+
+- `iStatus/iStatusHelper/`
+  Helper executable used for privileged sampling work.
 
 - `iStatus/Resources/Assets.xcassets`
   App icon, in-app icon assets, and shared color assets.
@@ -166,7 +216,9 @@ If icons or assets do not refresh immediately:
 ## Notes On Data Availability
 
 - Battery-specific details only appear on machines that expose that data
+- Some elevated telemetry paths rely on the bundled helper and may differ by Mac model or permissions state
 - Process tables intentionally show top items rather than exhaustive system process dumps
+- Disk purgeable / available capacity values follow macOS volume resource APIs and may vary by filesystem layout
 
 ## Design Direction
 
@@ -186,6 +238,7 @@ Potential next steps:
 - Search and filtering for process tables
 - Snapshot export
 - Additional dashboard customization
+- CPU temperature, thermal pressure, and fan telemetry once reliable collection is available
 
 ## License
 
