@@ -4,6 +4,10 @@
 
 # iStatus
 
+<p align="center">
+  <img src="iStatus/Resources/Assets.xcassets/iStatusBrand.imageset/icon.png" alt="iStatus logo" width="128" height="128">
+</p>
+
 iStatus is a native macOS menu bar system monitor built with SwiftUI and AppKit. It is designed for people who want fast, glanceable system telemetry in the menu bar, plus a richer dashboard for deeper inspection when needed.
 
 ## Overview
@@ -75,7 +79,7 @@ The current app covers:
 
 ## Screenshots
 
-The current screenshots should be refreshed to match the latest UI.
+The screenshots below reflect the current UI.
 
 ### Menu Bar
 
@@ -101,27 +105,25 @@ Use one refreshed detail screenshot that highlights the latest ring + breakdown 
 
 ![Battery Panel](docs/screenshots/battery-panel.png)
 
-Recommended screenshot updates:
+Included screenshots:
 
 - `docs/screenshots/menu-bar.png`
-  Refresh with the current menu bar strip typography and spacing.
+  Compact menu bar strip with the updated typography and spacing.
 - `docs/screenshots/network-popover.png`
-  Replace with any one current popover that shows the unified popup header and single-layer card structure.
+  Unified popup header and single-layer detail structure.
 - `docs/screenshots/dashboard-overview.png`
-  Refresh with the current overview waterfall layout and updated sidebar/header styling.
+  Dashboard overview with the current waterfall layout and updated sidebar/header styling.
 - `docs/screenshots/battery-panel.png`
-  Replace with either the latest battery detail panel or a new memory/disk detail screenshot, depending on which panel you want to feature.
+  Battery detail panel.
 
-Additional screenshots worth adding:
+Additional screenshots included in `docs/screenshots/`:
 
 - `docs/screenshots/menu-bar-settings.png`
-  Show the dedicated menu bar settings window with the live strip preview and visibility toggles.
+  Dedicated menu bar settings window with the live strip preview and visibility toggles.
 - `docs/screenshots/memory-popover.png`
-  Capture the compact dual-ring memory popup with the updated breakdown panel.
+  Compact dual-ring memory popup with the updated breakdown panel.
 - `docs/screenshots/disk-popover.png`
-  Capture the disk popup with the single-ring layout and Memory-style capacity breakdown.
-- `docs/screenshots/cpu-temp-popover.png`
-  Optional, but useful if you want to highlight temperature, thermal, and fan telemetry.
+  Disk popup with the single-ring layout and Memory-style capacity breakdown.
 
 ## App Behavior
 
