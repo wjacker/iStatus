@@ -755,6 +755,7 @@ struct MenuBarVisibilityButton: View {
 
     var body: some View {
         let isEnabled = menuBarSettings.isEnabled(item)
+        let accent = item.accent
 
         Button {
             isOnBinding.wrappedValue.toggle()
@@ -765,8 +766,8 @@ struct MenuBarVisibilityButton: View {
                         .fill(
                             LinearGradient(
                                 colors: isEnabled
-                                ? [Color(red: 0.11, green: 0.50, blue: 0.98), Color(red: 0.21, green: 0.67, blue: 1.0)]
-                                : [Color.white.opacity(0.22), Color.white.opacity(0.14)],
+                                ? [accent.opacity(0.95), accent.opacity(0.72)]
+                                : [accent.opacity(0.24), accent.opacity(0.14)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -789,14 +790,14 @@ struct MenuBarVisibilityButton: View {
 
                 Text(isEnabled ? "On" : "Off")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(isEnabled ? 0.92 : 0.7))
+                    .foregroundStyle(.white.opacity(isEnabled ? 0.94 : 0.72))
             }
             .padding(.horizontal, 8)
             .frame(height: 44)
-            .background(selectedTint.opacity(0.18))
+            .background(accent.opacity(isEnabled ? 0.18 : 0.12))
             .overlay(
                 RoundedRectangle(cornerRadius: 999, style: .continuous)
-                    .stroke(selectedTint.opacity(0.38), lineWidth: 1)
+                    .stroke(accent.opacity(isEnabled ? 0.38 : 0.24), lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 999, style: .continuous))
         }
@@ -809,10 +810,6 @@ struct MenuBarVisibilityButton: View {
             get: { menuBarSettings.isEnabled(item) },
             set: { menuBarSettings.setEnabled($0, for: item) }
         )
-    }
-
-    private var selectedTint: Color {
-        isOnBinding.wrappedValue ? Color(red: 0.11, green: 0.50, blue: 0.98) : Color.white
     }
 }
 
@@ -2146,6 +2143,10 @@ struct MemoryCardView: View {
     var showsBackground: Bool = true
     var showsHeader: Bool = true
 
+    private var isCompactLayout: Bool {
+        !showsBackground && !showsHeader
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if showsHeader {
@@ -2160,10 +2161,13 @@ struct MemoryCardView: View {
 
             if let detail = metricsStore.memoryDetail {
                 GeometryReader { proxy in
-                    let spacing: CGFloat = 18
-                    let ringWidth = min(max((proxy.size.width - spacing) / 2, 148), 206)
-                    let pressureSize = ringWidth
-                    let summarySize = ringWidth
+                    let spacing: CGFloat = isCompactLayout ? 16 : 18
+                    let minRingSize: CGFloat = isCompactLayout ? 128 : 148
+                    let maxRingSize: CGFloat = isCompactLayout ? 152 : 206
+                    let availableWidth = max(proxy.size.width - spacing, 0)
+                    let ringSize = min(max(availableWidth / 2, minRingSize), maxRingSize)
+                    let pressureSize = ringSize
+                    let summarySize = ringSize
 
                     HStack(alignment: .center, spacing: spacing) {
                         RingGaugeView(
@@ -2171,8 +2175,8 @@ struct MemoryCardView: View {
                             label: "PRESSURE",
                             colors: [.blue, .cyan, .blue],
                             size: pressureSize,
-                            lineWidth: pressureSize >= 190 ? 15 : 13,
-                            valueFontSize: pressureSize >= 190 ? 30 : 26
+                            lineWidth: isCompactLayout ? 11 : (pressureSize >= 190 ? 15 : 13),
+                            valueFontSize: isCompactLayout ? 22 : (pressureSize >= 190 ? 30 : 26)
                         )
                         .frame(maxWidth: .infinity)
 
@@ -2188,8 +2192,8 @@ struct MemoryCardView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
-                .frame(height: 220)
-                .padding(.top, 2)
+                .frame(height: isCompactLayout ? 176 : 220)
+                .padding(.top, isCompactLayout ? 0 : 2)
 
                 MemoryLegendPanel(detail: detail)
             }
@@ -2212,6 +2216,7 @@ struct MemoryCardView: View {
                             bucketInterval: bucketInterval
                         )
                         .frame(height: 120)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
 
