@@ -5,7 +5,7 @@
 # iStatus
 
 <p align="center">
-  <img src="iStatus/Resources/Assets.xcassets/iStatusBrand.imageset/icon.png" alt="iStatus logo" width="128" height="128">
+  <img src="iStatus/Resources/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="iStatus logo" width="128" height="128">
 </p>
 
 iStatus is a native macOS menu bar system monitor built with SwiftUI and AppKit. It is designed for people who want fast, glanceable system telemetry in the menu bar, plus a richer dashboard for deeper inspection when needed.
@@ -47,7 +47,6 @@ The current app covers:
 ### Dashboard
 
 - Overview screen with a waterfall-style summary layout
-- Dedicated sections for CPU, Memory, Disk, Network, CPU Temp, and Battery
 - Dedicated sections for CPU, Memory, Disk, Network, and Battery
 - Time-range switching for historical inspection
 - Collapsible sidebar for faster navigation
@@ -71,7 +70,6 @@ The current app covers:
 
 ### Detail Popovers
 
-- Unified popover header and visual language across CPU, Memory, Disk, Network, Temperature, and Battery
 - Unified popover header and visual language across CPU, Memory, Disk, Network, and Battery
 - Compact metric layouts optimized for menu bar usage
 - Shared ring, chart, and process-list styling between dashboard and popovers
@@ -89,7 +87,7 @@ Compact always-on metrics in the macOS menu bar, including the updated larger st
 
 ### Metric Popover
 
-Use one refreshed popover screenshot that shows the current single-layer popup style, updated header controls, and process list layout.
+Current single-layer popup style with updated header controls and process list layout.
 
 ![Network Popover](docs/screenshots/network-popover.png)
 
@@ -101,29 +99,27 @@ The main dashboard combines historical charts with dense system summaries and th
 
 ### Memory Or Disk Detail
 
-Use one refreshed detail screenshot that highlights the latest ring + breakdown presentation.
+Current battery detail panel.
 
 ![Battery Panel](docs/screenshots/battery-panel.png)
 
-Included screenshots:
+### Menu Bar Settings
 
-- `docs/screenshots/menu-bar.png`
-  Compact menu bar strip with the updated typography and spacing.
-- `docs/screenshots/network-popover.png`
-  Unified popup header and single-layer detail structure.
-- `docs/screenshots/dashboard-overview.png`
-  Dashboard overview with the current waterfall layout and updated sidebar/header styling.
-- `docs/screenshots/battery-panel.png`
-  Battery detail panel.
+Dedicated menu bar settings window with the live strip preview and visibility toggles.
 
-Additional screenshots included in `docs/screenshots/`:
+![Menu Bar Settings](docs/screenshots/menu-bar-settings.png)
 
-- `docs/screenshots/menu-bar-settings.png`
-  Dedicated menu bar settings window with the live strip preview and visibility toggles.
-- `docs/screenshots/memory-popover.png`
-  Compact dual-ring memory popup with the updated breakdown panel.
-- `docs/screenshots/disk-popover.png`
-  Disk popup with the single-ring layout and Memory-style capacity breakdown.
+### Memory Popover
+
+Compact dual-ring memory popup with the updated breakdown panel.
+
+![Memory Popover](docs/screenshots/memory-popover.png)
+
+### Disk Popover
+
+Disk popup with the single-ring layout and Memory-style capacity breakdown.
+
+![Disk Popover](docs/screenshots/disk-popover.png)
 
 ## App Behavior
 
