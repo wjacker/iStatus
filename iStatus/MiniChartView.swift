@@ -35,7 +35,7 @@ struct MiniChartView: View {
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottomLeading)
 
-                if let hoverIndex, hoverIndex < displayBars.count {
+                if let hoverIndex, hoverIndex < displayBars.count, displayBars[hoverIndex].value != nil {
                     SingleTooltip(bar: displayBars[hoverIndex], valueFormatter: valueFormatter)
                         .position(x: tooltipX(for: hoverIndex, barCount: displayBars.count, width: proxy.size.width), y: 12)
                         .allowsHitTesting(false)
@@ -82,7 +82,7 @@ struct MiniChartView: View {
 
     private func chartSelectionColumn(x: CGFloat, height: CGFloat) -> some View {
         return Rectangle()
-            .fill(Color.white.opacity(0.38))
+            .fill(Color.white)
             .frame(width: barWidth, height: height)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .offset(x: x - (barWidth / 2))
@@ -282,7 +282,8 @@ struct DualBarChartView: View {
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .center)
 
-                if let hoverIndex, hoverIndex < displayBars.count {
+                if let hoverIndex, hoverIndex < displayBars.count,
+                   displayBars[hoverIndex].upValue != nil || displayBars[hoverIndex].downValue != nil {
                     DualTooltip(
                         timestamp: displayBars[hoverIndex].timestamp,
                         upValue: displayBars[hoverIndex].upValue,
@@ -332,7 +333,7 @@ struct DualBarChartView: View {
 
     private func chartSelectionColumn(x: CGFloat, height: CGFloat) -> some View {
         return Rectangle()
-            .fill(Color.white.opacity(0.38))
+            .fill(Color.white)
             .frame(width: barWidth, height: height)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .offset(x: x - (barWidth / 2))
