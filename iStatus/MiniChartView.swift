@@ -157,10 +157,7 @@ struct MiniChartView: View {
     }
 
     private func alignedNow() -> Date {
-        let interval = max(bucketInterval, 1)
-        let now = Date().timeIntervalSince1970
-        let aligned = floor(now / interval) * interval
-        return Date(timeIntervalSince1970: aligned)
+        alignToClockBoundary(Date(), interval: bucketInterval)
     }
 
     private struct Bucket {
@@ -439,10 +436,7 @@ struct DualBarChartView: View {
     }
 
     private func alignedNow() -> Date {
-        let interval = max(bucketInterval, 1)
-        let now = Date().timeIntervalSince1970
-        let aligned = floor(now / interval) * interval
-        return Date(timeIntervalSince1970: aligned)
+        alignToClockBoundary(Date(), interval: bucketInterval)
     }
 
     private struct Bucket {
@@ -569,6 +563,36 @@ private struct DualTooltip: View {
 }
 
 private let midGap: CGFloat = 3
+
+private func alignToClockBoundary(_ date: Date, interval: TimeInterval) -> Date {
+    let interval = max(interval, 1)
+    let calendar = Calendar.current
+
+    if interval < 60 {
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        let secondInterval = max(Int(interval.rounded()), 1)
+        let second = components.second ?? 0
+        components.second = (second / secondInterval) * secondInterval
+        return calendar.date(from: components) ?? date
+    }
+
+    if interval < 3600 {
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let minuteInterval = max(Int((interval / 60).rounded()), 1)
+        let minute = components.minute ?? 0
+        components.minute = (minute / minuteInterval) * minuteInterval
+        components.second = 0
+        return calendar.date(from: components) ?? date
+    }
+
+    var components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
+    let hourInterval = max(Int((interval / 3600).rounded()), 1)
+    let hour = components.hour ?? 0
+    components.hour = (hour / hourInterval) * hourInterval
+    components.minute = 0
+    components.second = 0
+    return calendar.date(from: components) ?? date
+}
 
 private func formatNetworkRate(kilobytesPerSecond value: Double?, fallback: String = "--") -> String {
     guard let value else { return fallback }

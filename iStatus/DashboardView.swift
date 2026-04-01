@@ -2138,7 +2138,11 @@ struct BatteryLevelPanel: View {
                     minHeight: 110
                 )
             } else {
-                BatteryHistoryChartView(history: history, range: range)
+                BatteryHistoryChartView(
+                    history: history,
+                    range: range,
+                    bucketInterval: bucketInterval
+                )
             }
 
             RoundedRectangle(cornerRadius: 5)
@@ -2243,9 +2247,13 @@ enum BatteryDisplayStatus {
 struct BatteryHistoryChartView: View {
     let history: [BatteryHistorySample]
     let range: TimeInterval
+    let bucketInterval: TimeInterval
 
     @State private var hoverIndex: Int?
     @State private var hoverLocationX: CGFloat?
+
+    private let barWidth: CGFloat = 4
+    private let barSpacing: CGFloat = 2
 
     var body: some View {
         GeometryReader { proxy in
@@ -2262,10 +2270,11 @@ struct BatteryHistoryChartView: View {
 
                 VStack(spacing: 10) {
                     HStack(alignment: .bottom, spacing: 2) {
+                        Spacer(minLength: 0)
                         ForEach(Array(layout.enumerated()), id: \.offset) { index, item in
                             RoundedRectangle(cornerRadius: 2, style: .continuous)
                                 .fill(item.hasData ? item.barColor : Color.clear)
-                                .frame(width: 4, height: item.hasData ? max(110 * CGFloat(item.percent / 100), 4) : 0)
+                                .frame(width: barWidth, height: item.hasData ? max(110 * CGFloat(item.percent / 100), 4) : 0)
                                 .opacity(hoverIndex == index ? 1 : 0.96)
                         }
                     }
@@ -2299,20 +2308,26 @@ struct BatteryHistoryChartView: View {
     }
 
     private func bucketedValues(width: CGFloat) -> [BatteryHistoryBucket] {
-        let end = Date()
+        let end = alignedEndDate()
         let start = end.addingTimeInterval(-range)
-        let bucketCount = max(Int(width / 6), 12)
-        let step = range / Double(bucketCount)
-        var buckets = Array(repeating: [BatteryHistorySample](), count: bucketCount)
+        let baseBucketCount = max(Int(range / max(bucketInterval, 1)), 1)
+        let step = max(bucketInterval, 1)
+        var buckets = Array(repeating: [BatteryHistorySample](), count: baseBucketCount)
 
         for sample in history where sample.timestamp >= start && sample.timestamp <= end {
             let offset = sample.timestamp.timeIntervalSince(start)
-            let index = min(max(Int(offset / step), 0), bucketCount - 1)
+            let index = min(max(Int(offset / step), 0), baseBucketCount - 1)
             buckets[index].append(sample)
         }
 
-        return buckets.map { bucket in
-            guard !bucket.isEmpty else {
+        let maxBars = max(Int(width / (barWidth + barSpacing)), 1)
+        let groupSize = max(Int(ceil(Double(baseBucketCount) / Double(maxBars))), 1)
+
+        return stride(from: 0, to: baseBucketCount, by: groupSize).map { startIndex in
+            let endIndex = min(startIndex + groupSize, baseBucketCount)
+            let groupedSamples = buckets[startIndex..<endIndex].flatMap { $0 }
+
+            guard !groupedSamples.isEmpty else {
                 return BatteryHistoryBucket(
                     timestamp: nil,
                     percent: 0,
@@ -2322,10 +2337,13 @@ struct BatteryHistoryChartView: View {
                 )
             }
 
-            let latest = bucket.max(by: { $0.timestamp < $1.timestamp }) ?? bucket[0]
+            let latest = groupedSamples.max(by: { $0.timestamp < $1.timestamp }) ?? groupedSamples[0]
             let latestPercent = latest.percent
-            let averagePower = bucket.reduce(0) { $0 + ($1.isExternalPowerConnected ? 1.0 : 0.0) } / Double(bucket.count)
-            let averageCharging = bucket.reduce(0) { $0 + ($1.isCharging ? 1.0 : 0.0) } / Double(bucket.count)
+            let averagePower = groupedSamples.reduce(0) { $0 + ($1.isExternalPowerConnected ? 1.0 : 0.0) } / Double(groupedSamples.count)
+            let averageCharging = groupedSamples.reduce(0) { partial, sample in
+                partial + ((sample.isCharging && sample.percent < 99.5) ? 1.0 : 0.0)
+            } / Double(groupedSamples.count)
+
             return BatteryHistoryBucket(
                 timestamp: latest.timestamp,
                 percent: latestPercent,
@@ -2336,6 +2354,10 @@ struct BatteryHistoryChartView: View {
         }
     }
 
+    private func alignedEndDate() -> Date {
+        alignBatteryChartToClockBoundary(history.last?.timestamp ?? Date(), interval: bucketInterval)
+    }
+
     private func updateHoverState(locationX: CGFloat, width: CGFloat, itemCount: Int) {
         guard itemCount > 0 else {
             hoverIndex = nil
@@ -2343,13 +2365,18 @@ struct BatteryHistoryChartView: View {
             return
         }
 
-        let totalWidth = CGFloat(itemCount) * 4 + CGFloat(max(itemCount - 1, 0)) * 2
+        let totalWidth = CGFloat(itemCount) * barWidth + CGFloat(max(itemCount - 1, 0)) * barSpacing
+        let leftOffset = max(width - totalWidth, 0)
         let clampedLineX = min(max(locationX, 0), width)
         hoverLocationX = clampedLineX
 
-        let effectiveWidth = max(min(totalWidth, width), 1)
-        let relativePosition = min(max(clampedLineX / effectiveWidth, 0), 0.999_999)
-        let index = min(max(Int(relativePosition * CGFloat(itemCount)), 0), itemCount - 1)
+        guard locationX >= leftOffset, locationX <= leftOffset + totalWidth else {
+            hoverIndex = nil
+            return
+        }
+
+        let relativeX = locationX - leftOffset
+        let index = min(max(Int(relativeX / (barWidth + barSpacing)), 0), itemCount - 1)
         hoverIndex = index
     }
 
@@ -2432,6 +2459,36 @@ private struct BatteryHistoryTooltip: View {
         formatter.dateFormat = "HH:mm:ss"
         return formatter
     }()
+}
+
+private func alignBatteryChartToClockBoundary(_ date: Date, interval: TimeInterval) -> Date {
+    let interval = max(interval, 1)
+    let calendar = Calendar.current
+
+    if interval < 60 {
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        let secondInterval = max(Int(interval.rounded()), 1)
+        let second = components.second ?? 0
+        components.second = (second / secondInterval) * secondInterval
+        return calendar.date(from: components) ?? date
+    }
+
+    if interval < 3600 {
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let minuteInterval = max(Int((interval / 60).rounded()), 1)
+        let minute = components.minute ?? 0
+        components.minute = (minute / minuteInterval) * minuteInterval
+        components.second = 0
+        return calendar.date(from: components) ?? date
+    }
+
+    var components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
+    let hourInterval = max(Int((interval / 3600).rounded()), 1)
+    let hour = components.hour ?? 0
+    components.hour = (hour / hourInterval) * hourInterval
+    components.minute = 0
+    components.second = 0
+    return calendar.date(from: components) ?? date
 }
 
 struct BatteryModeRow: View {
