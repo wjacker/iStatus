@@ -75,11 +75,10 @@ struct DashboardView: View {
     @EnvironmentObject private var metricsStore: MetricsStore
     @State private var selectedSection: DashboardSection = .overview
     @State private var selectedRange: TimeRange = .min10
-    @State private var refreshTick = Date()
     @State private var isSidebarCollapsed = false
+    @State private var filteredSeriesCache: [MetricType: [MetricSample]] = [:]
 
     var body: some View {
-        let _ = refreshTick
         GeometryReader { proxy in
             let availableContentWidth = max(proxy.size.width - sidebarWidth, 320)
 
@@ -93,8 +92,14 @@ struct DashboardView: View {
                 }
             }
         }
+        .onAppear {
+            rebuildFilteredSeriesCache(referenceDate: metricsStore.sampleTick == .distantPast ? Date() : metricsStore.sampleTick)
+        }
         .onReceive(metricsStore.$sampleTick) { tick in
-            refreshTick = tick
+            rebuildFilteredSeriesCache(referenceDate: tick == .distantPast ? Date() : tick)
+        }
+        .onChange(of: selectedRange) { _ in
+            rebuildFilteredSeriesCache(referenceDate: metricsStore.sampleTick == .distantPast ? Date() : metricsStore.sampleTick)
         }
     }
 
@@ -580,9 +585,18 @@ struct DashboardView: View {
     }
 
     private func filteredSeries(_ type: MetricType) -> [MetricSample] {
-        _ = refreshTick
-        let cutoff = Date().addingTimeInterval(-selectedRange.duration)
-        return metricsStore.series(type).filter { $0.timestamp >= cutoff }
+        filteredSeriesCache[type] ?? []
+    }
+
+    private func rebuildFilteredSeriesCache(referenceDate: Date) {
+        let cutoff = referenceDate.addingTimeInterval(-selectedRange.duration)
+        var nextCache: [MetricType: [MetricSample]] = [:]
+
+        for type in MetricType.dashboardTypes {
+            nextCache[type] = metricsStore.series(type).samples(from: cutoff)
+        }
+
+        filteredSeriesCache = nextCache
     }
 
     private func formatPercent(_ value: Double) -> String {
@@ -599,18 +613,60 @@ struct DashboardView: View {
     }
 }
 
-private enum OverviewCardKind {
+private enum OverviewCardKind: String, Identifiable {
     case cpu
     case memory
     case disk
     case network
     case battery
+
+    var id: String { rawValue }
 }
 
 private struct OverviewCardItem: Identifiable {
-    let id = UUID()
     let kind: OverviewCardKind
     let estimatedHeight: CGFloat
+
+    var id: OverviewCardKind { kind }
+}
+
+private extension MetricType {
+    static let dashboardTypes: [MetricType] = [
+        .cpuUsage,
+        .cpuUser,
+        .cpuSystem,
+        .cpuTemperature,
+        .memoryAppBytes,
+        .memoryWiredBytes,
+        .memoryCompressedBytes,
+        .diskReadBytesPerSecond,
+        .diskWriteBytesPerSecond,
+        .networkTotalKBps,
+        .networkDownKBps,
+        .networkUpKBps,
+        .batteryPercent
+    ]
+}
+
+private extension Array where Element == MetricSample {
+    func samples(from cutoff: Date) -> [MetricSample] {
+        guard !isEmpty else { return [] }
+
+        var lowerBound = 0
+        var upperBound = count
+
+        while lowerBound < upperBound {
+            let mid = (lowerBound + upperBound) / 2
+            if self[mid].timestamp < cutoff {
+                lowerBound = mid + 1
+            } else {
+                upperBound = mid
+            }
+        }
+
+        guard lowerBound < count else { return [] }
+        return Array(self[lowerBound...])
+    }
 }
 
 private extension DashboardSection {
