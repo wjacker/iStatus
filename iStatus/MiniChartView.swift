@@ -25,7 +25,6 @@ struct MiniChartView: View {
                         x: hoverLocationX,
                         height: proxy.size.height
                     )
-                    .zIndex(1)
                 }
 
                 HStack(alignment: .bottom, spacing: barSpacing) {
@@ -83,9 +82,10 @@ struct MiniChartView: View {
 
     private func chartSelectionColumn(x: CGFloat, height: CGFloat) -> some View {
         return Rectangle()
-            .fill(Color.white.opacity(0.95))
-            .frame(width: 1, height: height)
-            .offset(x: x - 0.5)
+            .fill(Color.white.opacity(0.22))
+            .frame(width: barWidth, height: height)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .offset(x: x - (barWidth / 2))
     }
 
     private func updateHoverState(locationX: CGFloat, barCount: Int, width: CGFloat) {
@@ -331,9 +331,10 @@ struct DualBarChartView: View {
 
     private func chartSelectionColumn(x: CGFloat, height: CGFloat) -> some View {
         return Rectangle()
-            .fill(Color.white.opacity(0.95))
-            .frame(width: 1, height: height)
-            .offset(x: x - 0.5)
+            .fill(Color.white.opacity(0.22))
+            .frame(width: barWidth, height: height)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .offset(x: x - (barWidth / 2))
     }
 
     private func tooltipX(for index: Int, barCount: Int, width: CGFloat) -> CGFloat {
