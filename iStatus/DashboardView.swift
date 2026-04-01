@@ -44,6 +44,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
 enum TimeRange: String, CaseIterable, Identifiable {
     case min10 = "10m"
     case hour1 = "1h"
+    case hour3 = "3h"
     case hour6 = "6h"
     case hour12 = "12h"
     case hour24 = "24h"
@@ -54,6 +55,7 @@ enum TimeRange: String, CaseIterable, Identifiable {
         switch self {
         case .min10: return 10 * 60
         case .hour1: return 60 * 60
+        case .hour3: return 3 * 60 * 60
         case .hour6: return 6 * 60 * 60
         case .hour12: return 12 * 60 * 60
         case .hour24: return 24 * 60 * 60
@@ -64,6 +66,7 @@ enum TimeRange: String, CaseIterable, Identifiable {
         switch self {
         case .min10: return 5
         case .hour1: return 30
+        case .hour3: return 60
         case .hour6: return 3 * 60
         case .hour12: return 6 * 60
         case .hour24: return 12 * 60
