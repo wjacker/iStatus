@@ -248,9 +248,9 @@ struct DashboardView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header(isCompact: isCompact)
-                quickStats(isCompact: isCompact)
 
                 if selectedSection == .overview {
+                    quickStats(isCompact: isCompact)
                     overviewGrid(availableWidth: availableWidth)
                 } else {
                     sectionDetail
@@ -524,7 +524,8 @@ struct DashboardView: View {
                 upColor: .pink,
                 downColor: .blue,
                 range: selectedRange.duration,
-                bucketInterval: selectedRange.bucketInterval
+                bucketInterval: selectedRange.bucketInterval,
+                valueFormatter: { formatNetworkRate(kilobytesPerSecond: $0) }
             )
             .frame(height: 100)
 
@@ -1329,7 +1330,8 @@ struct DiskCardView: View {
                     upColor: readColor,
                     downColor: writeColor,
                     range: range,
-                    bucketInterval: bucketInterval
+                    bucketInterval: bucketInterval,
+                    valueFormatter: { formatNetworkRate(bytesPerSecond: $0) }
                 )
                 .frame(height: 110)
 
@@ -2735,7 +2737,8 @@ struct StatusItemDetailPopoverView: View {
                     upColor: .pink,
                     downColor: .blue,
                     range: selectedRange.duration,
-                    bucketInterval: selectedRange.bucketInterval
+                    bucketInterval: selectedRange.bucketInterval,
+                    valueFormatter: { formatNetworkRate(kilobytesPerSecond: $0) }
                 )
                 .frame(height: 110)
 

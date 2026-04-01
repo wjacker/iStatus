@@ -260,6 +260,7 @@ struct DualBarChartView: View {
     let downColor: Color
     let range: TimeInterval
     let bucketInterval: TimeInterval
+    var valueFormatter: ((Double?) -> String)? = nil
 
     @State private var hoverIndex: Int?
     @State private var hoverLocationX: CGFloat?
@@ -294,7 +295,8 @@ struct DualBarChartView: View {
                         upValue: displayBars[hoverIndex].upValue,
                         downValue: displayBars[hoverIndex].downValue,
                         upColor: upColor,
-                        downColor: downColor
+                        downColor: downColor,
+                        valueFormatter: valueFormatter
                     )
                         .position(
                             x: tooltipX(for: hoverIndex, barCount: displayBars.count, width: proxy.size.width),
@@ -519,6 +521,7 @@ private struct DualTooltip: View {
     let downValue: Double?
     let upColor: Color
     let downColor: Color
+    let valueFormatter: ((Double?) -> String)?
 
     var body: some View {
         VStack(spacing: 4) {
@@ -527,13 +530,13 @@ private struct DualTooltip: View {
                 .foregroundStyle(.white)
             HStack(spacing: 6) {
                 Circle().fill(upColor).frame(width: 6, height: 6)
-                Text("↑ \(formatRate(upValue ?? 0))")
+                Text("↑ \(formatValue(upValue))")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
             }
             HStack(spacing: 6) {
                 Circle().fill(downColor).frame(width: 6, height: 6)
-                Text("↓ \(formatRate(downValue ?? 0))")
+                Text("↓ \(formatValue(downValue))")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
             }
@@ -557,8 +560,11 @@ private struct DualTooltip: View {
         return formatter
     }()
 
-    private func formatRate(_ value: Double) -> String {
-        formatNetworkRate(kilobytesPerSecond: value)
+    private func formatValue(_ value: Double?) -> String {
+        if let valueFormatter {
+            return valueFormatter(value)
+        }
+        return formatNetworkRate(kilobytesPerSecond: value)
     }
 }
 
