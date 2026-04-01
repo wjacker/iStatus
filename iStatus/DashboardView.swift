@@ -2329,6 +2329,7 @@ struct BatteryHistoryChartView: View {
         return stride(from: 0, to: baseBucketCount, by: groupSize).map { startIndex in
             let endIndex = min(startIndex + groupSize, baseBucketCount)
             let groupedSamples = buckets[startIndex..<endIndex].flatMap { $0 }
+            let bucketTimestamp = start.addingTimeInterval(step * Double(endIndex))
 
             guard !groupedSamples.isEmpty else {
                 return BatteryHistoryBucket(
@@ -2348,7 +2349,7 @@ struct BatteryHistoryChartView: View {
             } / Double(groupedSamples.count)
 
             return BatteryHistoryBucket(
-                timestamp: latest.timestamp,
+                timestamp: bucketTimestamp,
                 percent: latestPercent,
                 isCharging: averageCharging >= 0.5,
                 isExternalPowerConnected: averagePower >= 0.5,
