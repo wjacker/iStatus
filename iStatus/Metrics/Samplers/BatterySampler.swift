@@ -119,6 +119,9 @@ final class BatterySampler {
 }
 
 final class SignificantEnergySampler {
+    private var lastCandidatePID: Int?
+    private var consecutiveHits: Int = 0
+
     func sampleTopApp() -> SignificantEnergyApp? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
@@ -139,7 +142,7 @@ final class SignificantEnergySampler {
         let output = String(decoding: data, as: UTF8.self)
         let lines = output.split(separator: "\n")
 
-        var best: (pid: Int, cpu: Double, path: String)?
+        var best: (pid: Int, cpu: Double, path: String, bundlePath: String?)?
         for line in lines {
             let parts = line.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
             guard parts.count == 3,
@@ -149,17 +152,57 @@ final class SignificantEnergySampler {
             }
 
             let path = String(parts[2])
-            if cpu < 8 { continue }
+            if cpu < 12 { continue }
             if path.hasPrefix("/System/") || path.hasPrefix("/usr/") { continue }
+
+            let bundlePath = bundlePathForPID(pid_t(pid))
+            if shouldExclude(path: path, bundlePath: bundlePath) { continue }
+
             if best == nil || cpu > best!.cpu {
-                best = (pid, cpu, path)
+                best = (pid, cpu, path, bundlePath)
             }
         }
 
-        guard let best else { return nil }
-        let bundlePath = bundlePathForPID(pid_t(best.pid))
-        let name = bundlePath.flatMap { displayNameForBundle(path: $0) } ?? URL(fileURLWithPath: best.path).lastPathComponent
-        return SignificantEnergyApp(pid: best.pid, name: name, bundlePath: bundlePath)
+        guard let best else {
+            lastCandidatePID = nil
+            consecutiveHits = 0
+            return nil
+        }
+
+        if lastCandidatePID == best.pid {
+            consecutiveHits += 1
+        } else {
+            lastCandidatePID = best.pid
+            consecutiveHits = 1
+        }
+
+        guard best.cpu >= 20 || consecutiveHits >= 3 else {
+            return nil
+        }
+
+        let name = best.bundlePath.flatMap { displayNameForBundle(path: $0) } ?? URL(fileURLWithPath: best.path).lastPathComponent
+        return SignificantEnergyApp(pid: best.pid, name: name, bundlePath: best.bundlePath)
+    }
+
+    private func shouldExclude(path: String, bundlePath: String?) -> Bool {
+        if path == Bundle.main.bundlePath || bundlePath == Bundle.main.bundlePath {
+            return true
+        }
+
+        if let bundlePath {
+            if bundlePath.contains("/iStatus.app/Contents/Library/LoginItems/")
+                || bundlePath.contains("/iStatusHelper.app")
+                || bundlePath.contains("/Contents/XPCServices/") {
+                return true
+            }
+        }
+
+        let lowercasedPath = path.lowercased()
+        if lowercasedPath.contains("istatushelper") || lowercasedPath.contains("istatus") {
+            return true
+        }
+
+        return false
     }
 
     private func bundlePathForPID(_ pid: pid_t) -> String? {
