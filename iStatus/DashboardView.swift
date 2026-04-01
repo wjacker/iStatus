@@ -1676,6 +1676,8 @@ struct BatteryCardView: View {
     var showsBackground: Bool = true
     var showsHeader: Bool = true
 
+    private var isCompactLayout: Bool { !showsBackground }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if showsHeader {
@@ -1695,44 +1697,28 @@ struct BatteryCardView: View {
                     message: "This Mac may still be gathering battery details, or the current hardware does not expose them."
                 )
             } else {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(spacing: 14) {
-                        BatteryStatSection(title: "POWER ADAPTER", rows: powerAdapterRows)
-                        BatteryStatSection(title: "BATTERY", rows: batteryRows)
-                        BatteryStatSection(title: "HEALTH", rows: healthRows)
+                VStack(alignment: .leading, spacing: 14) {
+                    BatteryRingPanel(
+                        percent: metricsStore.batteryDetail?.percent,
+                        healthPercent: metricsStore.batteryDetail?.healthPercent,
+                        status: batteryStatus,
+                        compact: isCompactLayout
+                    )
 
-                        if let detail = metricsStore.batteryDetail, !detail.cellVoltages.isEmpty {
-                            BatteryStatSection(
-                                title: "CELLS",
-                                rows: detail.cellVoltages.enumerated().map { index, voltage in
-                                    BatteryStatRow(title: "Cell \(index + 1)", value: formatVoltage(voltage))
-                                }
-                            )
-                        }
-                    }
-                    .frame(maxWidth: 320, alignment: .top)
+                    BatteryLevelPanel(
+                        history: batteryHistory,
+                        isCharging: metricsStore.batteryDetail?.isCharging ?? false,
+                        isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
+                        status: batteryStatus,
+                        range: range,
+                        bucketInterval: bucketInterval
+                    )
 
-                    VStack(spacing: 14) {
-                        BatteryRingPanel(
-                            percent: metricsStore.batteryDetail?.percent,
-                            healthPercent: metricsStore.batteryDetail?.healthPercent,
-                            status: batteryStatus
-                        )
+                    BatteryModeRow(mode: batteryModeText)
 
-                        BatteryLevelPanel(
-                            history: batteryHistory,
-                            isCharging: metricsStore.batteryDetail?.isCharging ?? false,
-                            isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
-                            status: batteryStatus,
-                            range: range,
-                            bucketInterval: bucketInterval
-                        )
+                    BatterySignificantEnergyRow(app: metricsStore.significantEnergyApp)
 
-                        BatteryModeRow(mode: batteryModeText)
-
-                        BatterySignificantEnergyRow(app: metricsStore.significantEnergyApp)
-                    }
-                    .frame(maxWidth: .infinity)
+                    batteryDetailsGrid
                 }
             }
         }
@@ -1790,6 +1776,28 @@ struct BatteryCardView: View {
     private var batteryHeaderValue: String {
         guard let detail = metricsStore.batteryDetail else { return "--" }
         return String(format: "%.0f%% · %@", detail.percent, batteryStatus.shortLabel)
+    }
+
+    @ViewBuilder
+    private var batteryDetailsGrid: some View {
+        let columns = isCompactLayout
+        ? [GridItem(.flexible(), spacing: 14)]
+        : [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
+
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 14) {
+            BatteryStatSection(title: "POWER ADAPTER", rows: powerAdapterRows)
+            BatteryStatSection(title: "BATTERY", rows: batteryRows)
+            BatteryStatSection(title: "HEALTH", rows: healthRows)
+
+            if let detail = metricsStore.batteryDetail, !detail.cellVoltages.isEmpty {
+                BatteryStatSection(
+                    title: "CELLS",
+                    rows: detail.cellVoltages.enumerated().map { index, voltage in
+                        BatteryStatRow(title: "Cell \(index + 1)", value: formatVoltage(voltage))
+                    }
+                )
+            }
+        }
     }
 
     private func formatWatts(_ value: Double?) -> String {
@@ -2037,16 +2045,18 @@ struct BatteryRingPanel: View {
     let percent: Double?
     let healthPercent: Double?
     let status: BatteryDisplayStatus
+    var compact: Bool = false
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: compact ? 12 : 18) {
             BatteryLargeRingView(
                 value: percent ?? 0,
                 title: "BATTERY",
                 icon: status.icon,
-                colors: status.ringColors
+                colors: status.ringColors,
+                compact: compact
             )
-            BatteryLargeRingView(value: healthPercent ?? 0, title: "HEALTH", icon: nil, colors: [.pink, .pink])
+            BatteryLargeRingView(value: healthPercent ?? 0, title: "HEALTH", icon: nil, colors: [.pink, .pink], compact: compact)
         }
         .padding(14)
         .frame(maxWidth: .infinity)
@@ -2064,7 +2074,10 @@ struct BatteryLargeRingView: View {
     let title: String
     let icon: String?
     let colors: [Color]
-    private let ringWidth: CGFloat = 12
+    var compact: Bool = false
+
+    private var ringWidth: CGFloat { compact ? 10 : 12 }
+    private var size: CGFloat { compact ? 132 : 150 }
 
     var body: some View {
         ZStack {
@@ -2106,19 +2119,19 @@ struct BatteryLargeRingView: View {
             VStack(spacing: 2) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: compact ? 16 : 18, weight: .semibold))
                         .foregroundStyle(colors.first ?? .white)
                 }
                 Text(String(format: "%.0f%%", value))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: compact ? 24 : 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: compact ? 11 : 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.9))
             }
             .padding(12)
         }
-        .frame(width: 150, height: 150)
+        .frame(width: size, height: size)
         .shadow(color: .black.opacity(0.16), radius: 12, x: 0, y: 8)
     }
 }
@@ -3205,9 +3218,7 @@ struct StatusItemDetailPopoverView: View {
 
     private var popupWidth: CGFloat {
         switch section {
-        case .battery:
-            return 720
-        case .disk, .memory, .network:
+        case .battery, .disk, .memory, .network:
             return 340
         default:
             return 340
