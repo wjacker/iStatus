@@ -127,6 +127,14 @@ struct BatteryDetail: Sendable {
     let lowPowerModeEnabled: Bool
 }
 
+struct BatteryHistorySample: Identifiable, Sendable {
+    let id = UUID()
+    let timestamp: Date
+    let percent: Double
+    let isCharging: Bool
+    let isExternalPowerConnected: Bool
+}
+
 struct SignificantEnergyApp: Sendable {
     let pid: Int?
     let name: String

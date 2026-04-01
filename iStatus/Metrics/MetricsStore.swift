@@ -73,6 +73,7 @@ final class MetricsStore: ObservableObject {
 
     private var task: Task<Void, Never>?
     private var seriesByType: [MetricType: RollingSeries] = [:]
+    private var batteryHistorySeries: [BatteryHistorySample] = []
     private var isRefreshingNetworkProcesses = false
     private var isRefreshingMemoryProcesses = false
     private var isRefreshingSignificantEnergy = false
@@ -139,6 +140,10 @@ final class MetricsStore: ObservableObject {
 
     func series(_ type: MetricType) -> [MetricSample] {
         seriesByType[type]?.samples ?? []
+    }
+
+    func batteryHistory(from cutoff: Date) -> [BatteryHistorySample] {
+        batteryHistorySeries.filter { $0.timestamp >= cutoff }
     }
 
     private func sampleOnce() async {
@@ -232,6 +237,14 @@ final class MetricsStore: ObservableObject {
         if let detail = batterySampler.sampleDetailed() {
             batteryDetail = detail
             append(.batteryPercent, value: detail.percent, timestamp: timestamp)
+            appendBatteryHistory(
+                BatteryHistorySample(
+                    timestamp: timestamp,
+                    percent: detail.percent,
+                    isCharging: detail.isCharging && detail.percent < 99.5,
+                    isExternalPowerConnected: detail.isExternalPowerConnected
+                )
+            )
         }
 
         refreshNetworkProcessesIfNeeded(shouldRefresh: shouldUpdateNetworkProcesses)
@@ -254,6 +267,18 @@ final class MetricsStore: ObservableObject {
         updatedLatest[type] = sample
         latest = updatedLatest
         seriesByType[type]?.append(sample)
+    }
+
+    private func appendBatteryHistory(_ sample: BatteryHistorySample) {
+        batteryHistorySeries.append(sample)
+        let cutoff = sample.timestamp.addingTimeInterval(-retention)
+        if let index = batteryHistorySeries.firstIndex(where: { $0.timestamp >= cutoff }) {
+            if index > 0 {
+                batteryHistorySeries.removeFirst(index)
+            }
+        } else {
+            batteryHistorySeries.removeAll()
+        }
     }
 
     private func formatDebug(_ value: Double?) -> String {
@@ -415,6 +440,16 @@ final class MetricsStore: ObservableObject {
     private func savePersistedSamples() {
         let cutoff = Date().addingTimeInterval(-retention)
         var payload: [String: [PersistedSample]] = [:]
+        let batteryHistoryPayload = batteryHistorySeries
+            .filter { $0.timestamp >= cutoff }
+            .map {
+                PersistedBatteryHistorySample(
+                    timestamp: $0.timestamp,
+                    percent: $0.percent,
+                    isCharging: $0.isCharging,
+                    isExternalPowerConnected: $0.isExternalPowerConnected
+                )
+            }
 
         for type in MetricType.allCases {
             let samples = seriesByType[type]?.samples ?? []
@@ -422,7 +457,11 @@ final class MetricsStore: ObservableObject {
             payload[type.rawValue] = filtered.map { PersistedSample(timestamp: $0.timestamp, value: $0.value) }
         }
 
-        let store = PersistedStore(savedAt: Date(), samplesByType: payload)
+        let store = PersistedStore(
+            savedAt: Date(),
+            samplesByType: payload,
+            batteryHistory: batteryHistoryPayload
+        )
         do {
             let data = try JSONEncoder().encode(store)
             try data.write(to: persistenceURL(), options: .atomic)
@@ -437,6 +476,17 @@ final class MetricsStore: ObservableObject {
             let store = try JSONDecoder().decode(PersistedStore.self, from: data)
             let cutoff = Date().addingTimeInterval(-retention)
             var restoredLatestTimestamp: Date?
+            batteryHistorySeries = (store.batteryHistory ?? [])
+                .filter { $0.timestamp >= cutoff }
+                .sorted { $0.timestamp < $1.timestamp }
+                .map {
+                    BatteryHistorySample(
+                        timestamp: $0.timestamp,
+                        percent: $0.percent,
+                        isCharging: $0.isCharging,
+                        isExternalPowerConnected: $0.isExternalPowerConnected
+                    )
+                }
 
             for (key, samples) in store.samplesByType {
                 guard let type = MetricType(rawValue: key) else { continue }
@@ -471,6 +521,7 @@ final class MetricsStore: ObservableObject {
             // ignore
         }
         latest.removeAll()
+        batteryHistorySeries.removeAll()
         MetricType.allCases.forEach { type in
             seriesByType[type] = RollingSeries(retention: retention)
         }
@@ -487,9 +538,17 @@ final class MetricsStore: ObservableObject {
 private struct PersistedStore: Codable {
     let savedAt: Date
     let samplesByType: [String: [PersistedSample]]
+    let batteryHistory: [PersistedBatteryHistorySample]?
 }
 
 private struct PersistedSample: Codable {
     let timestamp: Date
     let value: Double
+}
+
+private struct PersistedBatteryHistorySample: Codable {
+    let timestamp: Date
+    let percent: Double
+    let isCharging: Bool
+    let isExternalPowerConnected: Bool
 }

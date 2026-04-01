@@ -581,12 +581,18 @@ struct DashboardView: View {
         BatteryCardView(
             range: selectedRange.duration,
             bucketInterval: selectedRange.bucketInterval,
-            batterySeries: filteredSeries(.batteryPercent)
+            batteryHistory: filteredBatteryHistory()
         )
     }
 
     private func filteredSeries(_ type: MetricType) -> [MetricSample] {
         filteredSeriesCache[type] ?? []
+    }
+
+    private func filteredBatteryHistory() -> [BatteryHistorySample] {
+        let referenceDate = metricsStore.sampleTick == .distantPast ? Date() : metricsStore.sampleTick
+        let cutoff = referenceDate.addingTimeInterval(-selectedRange.duration)
+        return metricsStore.batteryHistory(from: cutoff)
     }
 
     private func rebuildFilteredSeriesCache(referenceDate: Date) {
@@ -1663,7 +1669,7 @@ struct BatteryCardView: View {
     @EnvironmentObject private var metricsStore: MetricsStore
     let range: TimeInterval
     let bucketInterval: TimeInterval
-    let batterySeries: [MetricSample]
+    let batteryHistory: [BatteryHistorySample]
     var showsBackground: Bool = true
     var showsHeader: Bool = true
 
@@ -1673,7 +1679,7 @@ struct BatteryCardView: View {
                 DashboardCardHeader(
                     title: "Battery",
                     subtitle: "Power source and health",
-                    value: metricsStore.batteryDetail.map { String(format: "%.0f%%", $0.percent) } ?? "--",
+                    value: batteryHeaderValue,
                     accent: .green,
                     icon: "battery.100percent"
                 )
@@ -1706,13 +1712,15 @@ struct BatteryCardView: View {
                     VStack(spacing: 14) {
                         BatteryRingPanel(
                             percent: metricsStore.batteryDetail?.percent,
-                            healthPercent: metricsStore.batteryDetail?.healthPercent
+                            healthPercent: metricsStore.batteryDetail?.healthPercent,
+                            status: batteryStatus
                         )
 
                         BatteryLevelPanel(
-                            samples: batterySeries,
+                            history: batteryHistory,
                             isCharging: metricsStore.batteryDetail?.isCharging ?? false,
                             isExternalPowerConnected: metricsStore.batteryDetail?.isExternalPowerConnected ?? false,
+                            status: batteryStatus,
                             range: range,
                             bucketInterval: bucketInterval
                         )
@@ -1732,6 +1740,7 @@ struct BatteryCardView: View {
     private var powerAdapterRows: [BatteryStatRow] {
         guard let detail = metricsStore.batteryDetail else { return [] }
         return [
+            BatteryStatRow(title: "Status", value: batteryStatus.label),
             BatteryStatRow(title: "Power", value: formatWatts(detail.adapterPowerWatts))
         ]
     }
@@ -1759,6 +1768,25 @@ struct BatteryCardView: View {
     private var batteryModeText: String {
         guard let detail = metricsStore.batteryDetail else { return "--" }
         return detail.lowPowerModeEnabled ? "Low Power" : "Automatic"
+    }
+
+    private var batteryStatus: BatteryDisplayStatus {
+        guard let detail = metricsStore.batteryDetail else { return .unknown }
+        if detail.isExternalPowerConnected && detail.percent >= 99.5 {
+            return .connected
+        }
+        if detail.isCharging {
+            return .charging
+        }
+        if detail.isExternalPowerConnected {
+            return .connected
+        }
+        return .battery
+    }
+
+    private var batteryHeaderValue: String {
+        guard let detail = metricsStore.batteryDetail else { return "--" }
+        return String(format: "%.0f%% · %@", detail.percent, batteryStatus.shortLabel)
     }
 
     private func formatWatts(_ value: Double?) -> String {
@@ -2005,10 +2033,16 @@ private struct TemperatureSummaryPill: View {
 struct BatteryRingPanel: View {
     let percent: Double?
     let healthPercent: Double?
+    let status: BatteryDisplayStatus
 
     var body: some View {
         HStack(spacing: 18) {
-            BatteryLargeRingView(value: percent ?? 0, title: "BATTERY", icon: "powerplug.fill", colors: [.blue, .cyan, .blue])
+            BatteryLargeRingView(
+                value: percent ?? 0,
+                title: "BATTERY",
+                icon: status.icon,
+                colors: status.ringColors
+            )
             BatteryLargeRingView(value: healthPercent ?? 0, title: "HEALTH", icon: nil, colors: [.pink, .pink])
         }
         .padding(14)
@@ -2087,15 +2121,16 @@ struct BatteryLargeRingView: View {
 }
 
 struct BatteryLevelPanel: View {
-    let samples: [MetricSample]
+    let history: [BatteryHistorySample]
     let isCharging: Bool
     let isExternalPowerConnected: Bool
+    let status: BatteryDisplayStatus
     let range: TimeInterval
     let bucketInterval: TimeInterval
 
     var body: some View {
         VStack(spacing: 10) {
-            if samples.isEmpty {
+            if history.isEmpty {
                 EmptyStatePanel(
                     icon: "chart.bar.fill",
                     title: "No battery history yet",
@@ -2103,21 +2138,27 @@ struct BatteryLevelPanel: View {
                     minHeight: 110
                 )
             } else {
-                BatteryLevelBarsView(samples: samples, range: range, bucketInterval: bucketInterval)
-                    .frame(height: 110)
+                BatteryHistoryChartView(history: history, range: range)
             }
 
             RoundedRectangle(cornerRadius: 5)
-                .fill(LinearGradient(colors: [.blue, .cyan], startPoint: .leading, endPoint: .trailing))
+                .fill(
+                    LinearGradient(
+                        colors: status.barColors,
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .frame(height: 16)
                 .overlay(
-                    Group {
-                        if isCharging || isExternalPowerConnected {
-                            Image(systemName: "bolt.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
+                    HStack(spacing: 8) {
+                        Image(systemName: status.icon)
+                            .font(.system(size: 14, weight: .bold))
+                        Text(status.label)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .tracking(0.6)
                     }
+                    .foregroundStyle(.white)
                 )
         }
         .padding(14)
@@ -2127,45 +2168,270 @@ struct BatteryLevelPanel: View {
     }
 }
 
-struct BatteryLevelBarsView: View {
-    let samples: [MetricSample]
-    let range: TimeInterval
-    let bucketInterval: TimeInterval
+enum BatteryDisplayStatus {
+    case charging
+    case connected
+    case battery
+    case unknown
 
-    var body: some View {
-        GeometryReader { proxy in
-            let bars = bucketedValues(width: proxy.size.width)
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(bars.enumerated()), id: \.offset) { _, value in
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color.blue.opacity(0.95))
-                        .frame(width: 4, height: max(proxy.size.height * CGFloat(value / 100), 4))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+    var label: String {
+        switch self {
+        case .charging:
+            return "Charging"
+        case .connected:
+            return "Power Adapter"
+        case .battery:
+            return "On Battery"
+        case .unknown:
+            return "Unknown"
         }
     }
 
-    private func bucketedValues(width: CGFloat) -> [Double] {
+    var shortLabel: String {
+        switch self {
+        case .charging:
+            return "Charging"
+        case .connected:
+            return "Plugged In"
+        case .battery:
+            return "Battery"
+        case .unknown:
+            return "Unknown"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .charging:
+            return "bolt.fill"
+        case .connected:
+            return "powerplug.fill"
+        case .battery:
+            return "battery.100"
+        case .unknown:
+            return "questionmark"
+        }
+    }
+
+    var ringColors: [Color] {
+        switch self {
+        case .charging:
+            return [.green, .mint, .cyan]
+        case .connected:
+            return [.blue, .cyan, .blue]
+        case .battery:
+            return [.green, .teal, .mint]
+        case .unknown:
+            return [.gray, .gray]
+        }
+    }
+
+    var barColors: [Color] {
+        switch self {
+        case .charging:
+            return [.green, .mint]
+        case .connected:
+            return [.blue, .cyan]
+        case .battery:
+            return [Color.white.opacity(0.26), Color.white.opacity(0.18)]
+        case .unknown:
+            return [Color.white.opacity(0.16), Color.white.opacity(0.12)]
+        }
+    }
+}
+
+struct BatteryHistoryChartView: View {
+    let history: [BatteryHistorySample]
+    let range: TimeInterval
+
+    @State private var hoverIndex: Int?
+    @State private var hoverLocationX: CGFloat?
+
+    var body: some View {
+        GeometryReader { proxy in
+            let layout = bucketedValues(width: proxy.size.width)
+
+            ZStack(alignment: .topLeading) {
+                if let hoverLocationX {
+                    Rectangle()
+                        .fill(Color.white)
+                        .frame(width: 3, height: proxy.size.height)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .offset(x: hoverLocationX - 1.5)
+                }
+
+                VStack(spacing: 10) {
+                    HStack(alignment: .bottom, spacing: 2) {
+                        ForEach(Array(layout.enumerated()), id: \.offset) { index, item in
+                            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                .fill(item.hasData ? item.barColor : Color.clear)
+                                .frame(width: 4, height: item.hasData ? max(110 * CGFloat(item.percent / 100), 4) : 0)
+                                .opacity(hoverIndex == index ? 1 : 0.96)
+                        }
+                    }
+                    .frame(height: 110, alignment: .bottomLeading)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                if let tooltipIndex = tooltipIndex(in: layout),
+                   let hoverLocationX {
+                    BatteryHistoryTooltip(item: layout[tooltipIndex])
+                        .position(x: tooltipX(for: hoverLocationX, width: proxy.size.width), y: 14)
+                        .allowsHitTesting(false)
+                        .zIndex(2)
+                }
+
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .onContinuousHover(coordinateSpace: .local) { phase in
+                        switch phase {
+                        case .active(let location):
+                            updateHoverState(locationX: location.x, width: proxy.size.width, itemCount: layout.count)
+                        case .ended:
+                            hoverIndex = nil
+                            hoverLocationX = nil
+                        }
+                    }
+            }
+        }
+        .frame(height: 110)
+    }
+
+    private func bucketedValues(width: CGFloat) -> [BatteryHistoryBucket] {
         let end = Date()
         let start = end.addingTimeInterval(-range)
         let bucketCount = max(Int(width / 6), 12)
         let step = range / Double(bucketCount)
-        var buckets = Array(repeating: [Double](), count: bucketCount)
+        var buckets = Array(repeating: [BatteryHistorySample](), count: bucketCount)
 
-        for sample in samples where sample.timestamp >= start && sample.timestamp <= end {
+        for sample in history where sample.timestamp >= start && sample.timestamp <= end {
             let offset = sample.timestamp.timeIntervalSince(start)
             let index = min(max(Int(offset / step), 0), bucketCount - 1)
-            buckets[index].append(sample.value)
+            buckets[index].append(sample)
         }
 
         return buckets.map { bucket in
-            if bucket.isEmpty {
-                return samples.last?.value ?? 0
+            guard !bucket.isEmpty else {
+                return BatteryHistoryBucket(
+                    timestamp: nil,
+                    percent: 0,
+                    isCharging: false,
+                    isExternalPowerConnected: false,
+                    hasData: false
+                )
             }
-            return bucket.reduce(0, +) / Double(bucket.count)
+
+            let latest = bucket.max(by: { $0.timestamp < $1.timestamp }) ?? bucket[0]
+            let latestPercent = latest.percent
+            let averagePower = bucket.reduce(0) { $0 + ($1.isExternalPowerConnected ? 1.0 : 0.0) } / Double(bucket.count)
+            let averageCharging = bucket.reduce(0) { $0 + ($1.isCharging ? 1.0 : 0.0) } / Double(bucket.count)
+            return BatteryHistoryBucket(
+                timestamp: latest.timestamp,
+                percent: latestPercent,
+                isCharging: averageCharging >= 0.5,
+                isExternalPowerConnected: averagePower >= 0.5,
+                hasData: true
+            )
         }
     }
+
+    private func updateHoverState(locationX: CGFloat, width: CGFloat, itemCount: Int) {
+        guard itemCount > 0 else {
+            hoverIndex = nil
+            hoverLocationX = nil
+            return
+        }
+
+        let totalWidth = CGFloat(itemCount) * 4 + CGFloat(max(itemCount - 1, 0)) * 2
+        let clampedLineX = min(max(locationX, 0), width)
+        hoverLocationX = clampedLineX
+
+        let effectiveWidth = max(min(totalWidth, width), 1)
+        let relativePosition = min(max(clampedLineX / effectiveWidth, 0), 0.999_999)
+        let index = min(max(Int(relativePosition * CGFloat(itemCount)), 0), itemCount - 1)
+        hoverIndex = index
+    }
+
+    private func tooltipX(for hoverLocationX: CGFloat, width: CGFloat) -> CGFloat {
+        min(max(hoverLocationX, 72), max(width - 72, 72))
+    }
+
+    private func tooltipIndex(in layout: [BatteryHistoryBucket]) -> Int? {
+        guard let hoverIndex else { return nil }
+        guard hoverIndex < layout.count else { return nil }
+        if layout[hoverIndex].hasData { return hoverIndex }
+
+        for distance in 1..<layout.count {
+            let leftIndex = hoverIndex - distance
+            if leftIndex >= 0, layout[leftIndex].hasData {
+                return leftIndex
+            }
+
+            let rightIndex = hoverIndex + distance
+            if rightIndex < layout.count, layout[rightIndex].hasData {
+                return rightIndex
+            }
+        }
+
+        return nil
+    }
+}
+
+private struct BatteryHistoryBucket {
+    let timestamp: Date?
+    let percent: Double
+    let isCharging: Bool
+    let isExternalPowerConnected: Bool
+    let hasData: Bool
+
+    var barColor: Color {
+        if isCharging {
+            return Color.green.opacity(0.95)
+        }
+        return isExternalPowerConnected ? Color.blue.opacity(0.95) : Color.pink.opacity(0.95)
+    }
+
+    var statusText: String {
+        if isCharging {
+            return "Charging"
+        }
+        return isExternalPowerConnected ? "Power" : "Battery"
+    }
+}
+
+private struct BatteryHistoryTooltip: View {
+    let item: BatteryHistoryBucket
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(timeText)
+            Text(String(format: "%.0f%% · %@", item.percent, item.statusText))
+        }
+        .font(.system(size: 10, weight: .semibold, design: .rounded))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.black.opacity(0.72))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+
+    private var timeText: String {
+        guard let timestamp = item.timestamp else { return "--" }
+        return Self.timeFormatter.string(from: timestamp)
+    }
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return formatter
+    }()
 }
 
 struct BatteryModeRow: View {
@@ -2716,7 +2982,7 @@ struct StatusItemDetailPopoverView: View {
             BatteryCardView(
                 range: selectedRange.duration,
                 bucketInterval: selectedRange.bucketInterval,
-                batterySeries: filteredSeries(.batteryPercent),
+                batteryHistory: filteredBatteryHistory(),
                 showsBackground: false,
                 showsHeader: false
             )
@@ -2900,6 +3166,11 @@ struct StatusItemDetailPopoverView: View {
     private func peakLabel(for series: [MetricSample]) -> String {
         let maxValue = series.map(\.value).max() ?? 0
         return formatNetworkRate(kilobytesPerSecond: maxValue)
+    }
+
+    private func filteredBatteryHistory() -> [BatteryHistorySample] {
+        let cutoff = Date().addingTimeInterval(-selectedRange.duration)
+        return metricsStore.batteryHistory(from: cutoff)
     }
 
     private func filteredSeries(_ type: MetricType) -> [MetricSample] {
