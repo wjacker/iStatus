@@ -281,7 +281,7 @@ struct DashboardView: View {
                             .minimumScaleFactor(0.8)
                     }
 
-                    Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
+                    Text(selectedSection.description)
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.74))
 
@@ -298,7 +298,7 @@ struct DashboardView: View {
                                 .font(.system(size: 34, weight: .black, design: .rounded))
                                 .foregroundStyle(.white)
                         }
-                        Text("Rolling history, high-frequency telemetry, and a cleaner view of what your Mac is doing right now.")
+                        Text(selectedSection.description)
                             .font(.system(size: 14, weight: .medium, design: .rounded))
                             .foregroundStyle(.white.opacity(0.74))
                     }
@@ -680,6 +680,25 @@ private extension Array where Element == MetricSample {
 }
 
 private extension DashboardSection {
+    var description: String {
+        switch self {
+        case .overview:
+            return "A quick glance at the most important system activity across your Mac."
+        case .cpu:
+            return "Live CPU load, recent activity, and how work is split across your cores."
+        case .memory:
+            return "Memory pressure, allocation mix, and which apps are using the most RAM."
+        case .disk:
+            return "Storage usage, throughput history, and the apps moving data right now."
+        case .network:
+            return "Traffic history, connection details, and the processes sending or receiving data."
+        case .temperature:
+            return "Thermal trends, fan behavior, and the current temperature picture of your Mac."
+        case .battery:
+            return "Power source, battery health, and recent charge behavior across the day."
+        }
+    }
+
     var menuBarItem: MenuBarMetricItem? {
         switch self {
         case .overview:
