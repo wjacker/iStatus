@@ -82,7 +82,7 @@ struct MiniChartView: View {
 
     private func chartSelectionColumn(x: CGFloat, height: CGFloat) -> some View {
         return Rectangle()
-            .fill(Color.white.opacity(0.22))
+            .fill(Color.white.opacity(0.38))
             .frame(width: barWidth, height: height)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .offset(x: x - (barWidth / 2))
@@ -96,12 +96,13 @@ struct MiniChartView: View {
 
         let totalWidth = CGFloat(barCount) * barWidth + CGFloat(max(barCount - 1, 0)) * barSpacing
         let leftOffset = max(width - totalWidth, 0)
-        let clampedX = min(max(locationX, leftOffset), leftOffset + totalWidth)
-        let relativeX = max(clampedX - leftOffset, 0)
+        let clampedLineX = min(max(locationX, 0), width)
+        let clampedBarX = min(max(locationX, leftOffset), leftOffset + totalWidth)
+        let relativeX = max(clampedBarX - leftOffset, 0)
         let index = min(max(Int(relativeX / (barWidth + barSpacing)), 0), barCount - 1)
 
         hoverIndex = index
-        hoverLocationX = clampedX
+        hoverLocationX = clampedLineX
     }
 
     private func barCenterX(for index: Int, barCount: Int, width: CGFloat) -> CGFloat {
@@ -331,7 +332,7 @@ struct DualBarChartView: View {
 
     private func chartSelectionColumn(x: CGFloat, height: CGFloat) -> some View {
         return Rectangle()
-            .fill(Color.white.opacity(0.22))
+            .fill(Color.white.opacity(0.38))
             .frame(width: barWidth, height: height)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .offset(x: x - (barWidth / 2))
@@ -349,12 +350,13 @@ struct DualBarChartView: View {
 
         let totalWidth = CGFloat(barCount) * barWidth + CGFloat(max(barCount - 1, 0)) * barSpacing
         let leftOffset = max(width - totalWidth, 0)
-        let clampedX = min(max(locationX, leftOffset), leftOffset + totalWidth)
-        let relativeX = max(clampedX - leftOffset, 0)
+        let clampedLineX = min(max(locationX, 0), width)
+        let clampedBarX = min(max(locationX, leftOffset), leftOffset + totalWidth)
+        let relativeX = max(clampedBarX - leftOffset, 0)
         let index = min(max(Int(relativeX / (barWidth + barSpacing)), 0), barCount - 1)
 
         hoverIndex = index
-        hoverLocationX = clampedX
+        hoverLocationX = clampedLineX
     }
 
     private func barCenterX(for index: Int, barCount: Int, width: CGFloat) -> CGFloat {
